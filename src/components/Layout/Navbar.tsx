@@ -8,12 +8,13 @@ import {
 	StretchHorizontal,
 } from "lucide-react";
 import { IconButton } from "../common/IconButton";
+import { NavbarProps } from "../types/NavbarProps";
 
-export const Navbar = () => {
+export const Navbar = ({ handleOpen }: NavbarProps) => {
 	return (
-		<nav className="flex justify-between w-full py-2 px-2 border-b items-center">
+		<nav className="flex justify-between w-full py-2 px-3.5 border-b items-center">
 			<div className="flex items-center">
-				<IconButton icon={Menu} />
+				<IconButton icon={Menu} onClick={handleOpen} />
 				{/* //Aquí ira el link describiendo el contexto */}
 				<h1 className="text-2xl pl-2">Keep</h1>
 			</div>
