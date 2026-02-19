@@ -1,11 +1,5 @@
-//TODO: Acá se realizara el respectivo apartado en donde iran el centro de notas y la información que uno verá principalmente
-
-// Aunque acá se tendria que pasar notas como tal <NoteList/>
+import { NoteClient } from "../components/Note/NoteClient";
 
 export default function Home() {
-	return (
-		<section className="h-full flex justify-center items-center">
-			<h1>Hello world</h1>
-		</section>
-	);
+	return <NoteClient />;
 }
