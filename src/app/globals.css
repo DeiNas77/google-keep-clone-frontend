@@ -3,10 +3,12 @@
 :root {
   --primary-color:#102542 ;
   --secondary-color: #F87060;
-  --third-color: #F5F0EB
+  --third-color: #F5F0EB;
+  --input-color: #0e2a51;
 }
 
 @theme inline {
+  --input-color: var(--input-color)
   --color-background: var(--primary-color);
   --color-foreground: var(--second-color);
   --color-accent: var(--third-color);
