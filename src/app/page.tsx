@@ -1,7 +1,5 @@
+import { NoteClient } from "../components/Note/NoteClient";
+
 export default function Home() {
-	return (
-		<div className="">
-			<h1 className="text-white text-2xl">Hello World</h1>
-		</div>
-	);
+	return <NoteClient />;
 }
