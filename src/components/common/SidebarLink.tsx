@@ -11,7 +11,7 @@ export const SidebarLink = ({
 		<Link
 			href={href}
 			className={`
-				flex items-center transition-all duration-300
+				flex items-center transition-all duration-200
 				${
 					collapsed
 						? "flex items-center py-3 px-[.95rem] w-13 rounded-full hover:bg-gray-100"
