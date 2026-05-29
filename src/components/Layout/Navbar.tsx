@@ -10,7 +10,11 @@ import {
 import { IconButton } from "../common/IconButton";
 import { NavbarProps } from "../types/NavbarProps";
 
-export const Navbar = ({ handleOpen }: NavbarProps) => {
+export const Navbar = ({
+	handleOpen,
+	handleGrid,
+	setHandleGrid,
+}: NavbarProps) => {
 	return (
 		<nav className="flex justify-between w-full py-2 px-3.5 border-b items-center">
 			<section className="flex items-center">
@@ -28,7 +32,10 @@ export const Navbar = ({ handleOpen }: NavbarProps) => {
 			</form>
 			<div className="flex gap-2">
 				<IconButton icon={RotateCcw} />
-				<IconButton icon={LayoutGrid} />
+				<IconButton
+					icon={handleGrid ? LayoutGrid : StretchHorizontal}
+					onClick={() => setHandleGrid(!handleGrid)}
+				/>
 				<IconButton icon={Settings} />
 			</div>
 			<div>
