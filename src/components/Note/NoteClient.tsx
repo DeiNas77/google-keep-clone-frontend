@@ -8,11 +8,14 @@ import { NoteList } from "../Note/NoteList";
 
 export const NoteClient = () => {
   const { notes } = useAppContext();
+
+  const notesActive = notes.filter((note) => !note.archived);
+
   return (
     <section className="w-full flex flex-col flex-1 h-full">
       <NoteInput />
 
-      {notes.length > 0 ? (
+      {notesActive.length > 0 ? (
         <NoteList />
       ) : (
         <div className="flex flex-1 items-center justify-center">

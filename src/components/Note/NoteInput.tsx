@@ -25,6 +25,7 @@ export const NoteInput = () => {
             id: crypto.randomUUID(),
             title,
             content,
+            archived: false,
           };
           addNote(newNote);
           setTitle("");
