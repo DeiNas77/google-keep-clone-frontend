@@ -26,6 +26,7 @@ export const NoteInput = () => {
             title,
             content,
             archived: false,
+            trashed: false,
           };
           addNote(newNote);
           setTitle("");

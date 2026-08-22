@@ -4,7 +4,9 @@ import { NoteCard } from "../Note/NoteCard";
 export const NoteList = () => {
   const { isGrid, notes } = useAppContext();
 
-  const notesPrincipal = notes.filter((note) => !note.archived);
+  const notesPrincipal = notes.filter(
+    (note) => !note.archived && !note.trashed,
+  );
 
   return (
     <section

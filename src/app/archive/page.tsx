@@ -8,7 +8,7 @@ import { NoteCard } from "../../components/Note/NoteCard";
 export default function Archive() {
   const { isGrid, notes } = useAppContext();
 
-  const notesArchived = notes.filter((note) => note.archived);
+  const notesArchived = notes.filter((note) => note.archived && !note.trashed);
 
   return (
     <section className="w-full flex flex-col flex-1 h-full">
