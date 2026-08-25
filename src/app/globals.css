@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --primary-color:#102542 ;
-  --secondary-color: #F87060;
-  --third-color: #F5F0EB;
+  --primary-color: #102542;
+  --secondary-color: #f87060;
+  --third-color: #f5f0eb;
   --input-color: #0e2a51;
+  --card-color: #21306c;
 }
 
 @theme inline {
-  --input-color: var(--input-color)
-  --color-background: var(--primary-color);
+  --input-color: var(--input-color) --color-background: var(--primary-color);
   --color-foreground: var(--second-color);
   --color-accent: var(--third-color);
   --font-sans: var(--font-geist-sans);
