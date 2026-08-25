@@ -4,9 +4,10 @@ import { SplashLayout } from "@/src/components/Layout/SplashLayout";
 import { ArchiveIcon } from "lucide-react";
 import { useAppContext } from "../../components/context/AppContext";
 import { NoteCard } from "../../components/Note/NoteCard";
+import { NoteModal } from "../../components/Note/NoteModal";
 
 export default function Archive() {
-  const { isGrid, notes } = useAppContext();
+  const { isGrid, notes, selectedNote } = useAppContext();
 
   const notesArchived = notes.filter((note) => note.archived && !note.trashed);
 
@@ -28,10 +29,12 @@ export default function Archive() {
         <div className="flex flex-1 items-center justify-center">
           <SplashLayout
             icon={ArchiveIcon}
-            text={`Tus notas archivadas apareceran aquí`}
+            text="Tus notas archivadas aparecerán aquí"
           />
         </div>
       )}
+
+      {selectedNote && <NoteModal />}
     </section>
   );
 }

@@ -4,9 +4,10 @@ import { SplashLayout } from "@/src/components/Layout/SplashLayout";
 import { Trash, TrashIcon } from "lucide-react";
 import { useAppContext } from "../../components/context/AppContext";
 import { NoteCard } from "../../components/Note/NoteCard";
+import { NoteModal } from "../../components/Note/NoteModal";
 
 export default function TrashPage() {
-  const { isGrid, notes, emptyTrash } = useAppContext();
+  const { isGrid, notes, emptyTrash, selectedNote } = useAppContext();
 
   const trashedNotes = notes.filter((note) => note.trashed && !note.archived);
 
@@ -44,6 +45,8 @@ export default function TrashPage() {
           <SplashLayout icon={Trash} text="No hay notas en la papelera" />
         </div>
       )}
+
+      {selectedNote && <NoteModal />}
     </section>
   );
 }
