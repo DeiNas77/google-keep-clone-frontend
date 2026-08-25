@@ -6,12 +6,15 @@ import type { Note } from "../types/Note";
 interface AppContextProps {
   notes: Note[];
   addNote: (note: Note) => void;
+  updateNote: (id: string, title: string, content: string) => void;
   archiveNote: (id: string) => void;
   unarchiveNote: (id: string) => void;
   trashNote: (id: string) => void;
   restoreNote: (id: string) => void;
   deleteNotePermanently: (id: string) => void;
   emptyTrash: () => void;
+  selectedNote: Note | null;
+  setSelectedNote: (note: Note | null) => void;
   isGrid: boolean;
   toggleGrid: () => void;
   isSidebarOpen: boolean;
@@ -24,10 +27,18 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [isGrid, setIsGrid] = useState<boolean>(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
-  const addNote = (note: Note) => setNotes((prev) => [note, ...prev]);
   const toggleGrid = () => setIsGrid((prev) => !prev);
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+
+  const addNote = (note: Note) => setNotes((prev) => [note, ...prev]);
+
+  const updateNote = (id: string, title: string, content: string) => {
+    setNotes((prev) =>
+      prev.map((note) => (note.id === id ? { ...note, title, content } : note)),
+    );
+  };
 
   const archiveNote = (id: string) => {
     setNotes((prev) =>
@@ -70,12 +81,15 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       value={{
         notes,
         addNote,
+        updateNote,
         archiveNote,
         unarchiveNote,
         trashNote,
         deleteNotePermanently,
         emptyTrash,
         restoreNote,
+        selectedNote,
+        setSelectedNote,
         isGrid,
         toggleGrid,
         isSidebarOpen,
