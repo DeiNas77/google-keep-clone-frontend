@@ -5,3 +5,7 @@ export type Note = {
   archived: boolean;
   trashed: boolean;
 };
+
+export interface NoteCardProps {
+  note: Note;
+}
