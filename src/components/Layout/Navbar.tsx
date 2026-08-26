@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { IconButton } from "../common/IconButton";
 import { NavbarProps } from "../types/NavbarProps";
+import { ROUTES } from "@/src/constant";
 
 export const Navbar = ({
   handleOpen,
@@ -160,9 +161,7 @@ export const Navbar = ({
                       <User className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-white">
-                        Usuario
-                      </p>
+                      <p className="text-sm font-medium text-white">Usuario</p>
                       <p className="text-xs text-white/60">usuario@email.com</p>
                     </div>
                   </div>
@@ -178,7 +177,7 @@ export const Navbar = ({
             ) : (
               <>
                 <Link
-                  href="/login"
+                  href={ROUTES.LOGIN}
                   className="flex items-center gap-3 w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-[#1a3a5c] transition-colors"
                   onClick={() => setIsUserMenuOpen(false)}
                 >
@@ -186,7 +185,7 @@ export const Navbar = ({
                   Iniciar sesión
                 </Link>
                 <Link
-                  href="/register"
+                  href={ROUTES.REGISTER}
                   className="flex items-center gap-3 w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-[#1a3a5c] transition-colors rounded-b-lg"
                   onClick={() => setIsUserMenuOpen(false)}
                 >

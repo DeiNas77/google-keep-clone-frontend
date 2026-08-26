@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Camera, User } from "lucide-react";
+import { ROUTES } from "@/src/constant";
 
 export default function RegisterPage() {
   return (
-    <section className="flex flex-1 items-center justify-center min-h-[calc(100vh-60px)]">
+    <section className="flex flex-1 items-center justify-center min-h-full">
       <div className="bg-(--card-color) rounded-3xl p-8 w-full max-w-md mx-4 shadow-xl">
         <h1 className="text-2xl font-semibold text-white text-center mb-6">
           Crear cuenta
@@ -60,7 +61,7 @@ export default function RegisterPage() {
         </form>
         <p className="text-center text-white/60 text-sm mt-6">
           ¿Ya tienes cuenta?{" "}
-          <Link href="/login" className="text-white hover:underline">
+          <Link href={ROUTES.LOGIN} className="text-white hover:underline">
             Iniciar sesión
           </Link>
         </p>
