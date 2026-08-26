@@ -5,9 +5,10 @@ import { NoteInput } from "./NoteInput";
 import { Lightbulb } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import { NoteList } from "../Note/NoteList";
+import { NoteModal } from "./NoteModal";
 
 export const NoteClient = () => {
-  const { notes } = useAppContext();
+  const { notes, selectedNote } = useAppContext();
 
   const notesActive = notes.filter((note) => !note.archived);
 
@@ -25,6 +26,8 @@ export const NoteClient = () => {
           />
         </div>
       )}
+
+      {selectedNote && <NoteModal />}
     </section>
   );
 };

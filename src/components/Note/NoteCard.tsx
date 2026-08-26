@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Note } from "../types/Note";
+import { NoteCardProps } from "../types/Note";
 import {
   ArchiveIcon,
   EllipsisVertical,
@@ -8,13 +8,14 @@ import {
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 
-export const NoteCard = ({ note }: { note: Note }) => {
+export const NoteCard = ({ note }: NoteCardProps) => {
   const {
     archiveNote,
     unarchiveNote,
     trashNote,
     restoreNote,
     deleteNotePermanently,
+    setSelectedNote,
   } = useAppContext();
   const { id, title, content, archived, trashed } = note;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -33,6 +34,10 @@ export const NoteCard = ({ note }: { note: Note }) => {
     setIsDropdownOpen(false);
   };
 
+  const handleClick = () => {
+    setSelectedNote(note);
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -48,7 +53,10 @@ export const NoteCard = ({ note }: { note: Note }) => {
   }, []);
 
   return (
-    <div className="border rounded-3xl min-h-16 wrap-break-word relative">
+    <div
+      className="border rounded-3xl min-h-16 wrap-break-word relative cursor-pointer hover:shadow-lg transition-shadow"
+      onClick={handleClick}
+    >
       <p className="text-2xl font-semibold line-clamp-2 px-4 pt-2 pb-1">
         {title}
       </p>
@@ -57,7 +65,10 @@ export const NoteCard = ({ note }: { note: Note }) => {
       >
         {content}
       </p>
-      <div className="flex justify-end px-4 pt-2 pb-3 gap-2">
+      <div
+        className="flex justify-end px-4 pt-2 pb-3 gap-2"
+        onClick={(e) => e.stopPropagation()}
+      >
         {trashed ? (
           <>
             <button
