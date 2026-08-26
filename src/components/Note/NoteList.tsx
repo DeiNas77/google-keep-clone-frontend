@@ -1,5 +1,5 @@
-import { useAppContext } from "../context/AppContext";
-import { NoteCard } from "../Note/NoteCard";
+import { NoteCard } from "@/src/components/Note/NoteCard";
+import { useAppContext } from "@/src/components/context/AppContext";
 
 export const NoteList = () => {
   const { isGrid, notes } = useAppContext();
