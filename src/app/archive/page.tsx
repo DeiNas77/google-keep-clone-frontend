@@ -2,9 +2,10 @@
 
 import { SplashLayout } from "@/src/components/Layout/SplashLayout";
 import { ArchiveIcon } from "lucide-react";
-import { useAppContext } from "../../components/context/AppContext";
-import { NoteCard } from "../../components/Note/NoteCard";
-import { NoteModal } from "../../components/Note/NoteModal";
+import { useAppContext } from "@/src/components/context/AppContext";
+import { NoteCard } from "@/src/components/Note/NoteCard";
+import { NoteModal } from "@/src/components/Note/NoteModal";
+import { NoteGrid } from "@/src/components/common/NoteGrid";
 
 export default function Archive() {
   const { isGrid, notes, selectedNote } = useAppContext();
@@ -14,17 +15,11 @@ export default function Archive() {
   return (
     <section className="w-full flex flex-col flex-1 h-full">
       {notesArchived.length > 0 ? (
-        <section
-          className={
-            isGrid
-              ? "grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4 items-start my-7 mx-5"
-              : "flex flex-col w-full max-w-xl mx-auto mt-5 gap-5"
-          }
-        >
+        <NoteGrid isGrid={isGrid}>
           {notesArchived.map((note) => (
             <NoteCard note={note} key={note.id} />
           ))}
-        </section>
+        </NoteGrid>
       ) : (
         <div className="flex flex-1 items-center justify-center">
           <SplashLayout
