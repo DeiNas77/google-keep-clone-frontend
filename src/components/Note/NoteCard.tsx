@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { NoteCardProps } from "../types/Note";
 import {
   ArchiveIcon,
@@ -7,6 +7,7 @@ import {
   TrashIcon,
 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
+import { useClickOutside } from "@/src/hooks/useClickOutside";
 
 export const NoteCard = ({ note }: NoteCardProps) => {
   const {
@@ -20,6 +21,8 @@ export const NoteCard = ({ note }: NoteCardProps) => {
   const { id, title, content, archived, trashed } = note;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(dropdownRef, () => setIsDropdownOpen(false));
 
   const handleArchive = (id: string) => {
     if (archived) {
@@ -37,20 +40,6 @@ export const NoteCard = ({ note }: NoteCardProps) => {
   const handleClick = () => {
     setSelectedNote(note);
   };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   return (
     <div

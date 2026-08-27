@@ -10,7 +10,7 @@ import { NoteModal } from "./NoteModal";
 export const NoteClient = () => {
   const { notes, selectedNote } = useAppContext();
 
-  const notesActive = notes.filter((note) => !note.archived);
+  const notesActive = notes.filter((note) => !note.archived && !note.trashed);
 
   return (
     <section className="w-full flex flex-col flex-1 h-full">
