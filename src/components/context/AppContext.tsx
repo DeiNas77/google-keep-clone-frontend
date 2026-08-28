@@ -2,6 +2,7 @@
 "use client";
 import { createContext, useContext, useState } from "react";
 import type { Note } from "../types/Note";
+import { useDebounce } from "@/src/hooks/useDebounce";
 
 interface AppContextProps {
   notes: Note[];
@@ -19,6 +20,9 @@ interface AppContextProps {
   toggleGrid: () => void;
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  debouncedQuery: string;
 }
 
 const AppContext = createContext<AppContextProps>({} as AppContextProps);
@@ -28,6 +32,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [isGrid, setIsGrid] = useState<boolean>(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const debouncedQuery = useDebounce(searchQuery, 300);
 
   const toggleGrid = () => setIsGrid((prev) => !prev);
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
@@ -94,6 +100,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         toggleGrid,
         isSidebarOpen,
         toggleSidebar,
+        searchQuery,
+        setSearchQuery,
+        debouncedQuery,
       }}
     >
       {children}
