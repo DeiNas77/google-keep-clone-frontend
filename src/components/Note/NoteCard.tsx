@@ -50,7 +50,7 @@ export const NoteCard = ({ note }: NoteCardProps) => {
         {title}
       </p>
       <p
-        className={`text-sm text-white line-clamp-6 px-4 pb-2 ${title && content ? "pt-2" : "pt-1"}`}
+        className={`text-sm text-white line-clamp-6 pl-4.5 pr-4 pb-2 ${title && content ? "pt-1" : "pt-2"}`}
       >
         {content}
       </p>
