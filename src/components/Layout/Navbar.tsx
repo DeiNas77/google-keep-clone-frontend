@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import {
   Menu,
@@ -16,6 +16,7 @@ import {
 import { IconButton } from "../common/IconButton";
 import { NavbarProps } from "../types/NavbarProps";
 import { ROUTES } from "@/src/constant";
+import { useClickOutside } from "@/src/hooks/useClickOutside";
 
 export const Navbar = ({
   handleOpen,
@@ -31,22 +32,8 @@ export const Navbar = ({
   // TODO: replace with actual auth state
   const isLoggedIn = false;
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
-        setIsMoreOpen(false);
-      }
-      if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
-      ) {
-        setIsUserMenuOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useClickOutside(moreRef, () => setIsMoreOpen(false));
+  useClickOutside(userMenuRef, () => setIsUserMenuOpen(false));
 
   return (
     <nav className="flex justify-between w-full py-2 px-3.5 border-b items-center gap-2">
@@ -87,9 +74,30 @@ export const Navbar = ({
         )}
       </form>
 
-      {/* Mobile search icon */}
-      <div className="md:hidden">
-        <IconButton icon={Search} onClick={() => setIsSearchOpen(true)} />
+      {/* Mobile search - expands in navbar */}
+      <div className="flex md:hidden flex-1 justify-end">
+        {isSearchOpen ? (
+          <div className="flex items-center w-full gap-2">
+            <button
+              type="button"
+              onClick={() => setIsSearchOpen(false)}
+              className="p-2 hover:bg-white/20 rounded-full transition-colors shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar"
+                className="w-full pl-9 pr-3 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-(--secondary-color) focus:border-(--secondary-color) text-(--secondary-color) placeholder-gray-400 text-sm"
+                autoFocus
+              />
+            </div>
+          </div>
+        ) : (
+          <IconButton icon={Search} onClick={() => setIsSearchOpen(true)} />
+        )}
       </div>
 
       {/* Desktop icons - always visible */}
@@ -103,46 +111,58 @@ export const Navbar = ({
       </div>
 
       {/* Mobile */}
-      <div className="flex md:hidden gap-1 shrink-0 items-center">
-        <IconButton
-          icon={handleGrid ? StretchHorizontal : LayoutGrid}
-          onClick={() => setHandleGrid(!handleGrid)}
-        />
-
-        {/* More options dropdown */}
-        <div className="relative" ref={moreRef}>
+      {!isSearchOpen && (
+        <div className="flex md:hidden gap-1 shrink-0 items-center">
           <IconButton
-            icon={MoreVertical}
-            onClick={() => setIsMoreOpen(!isMoreOpen)}
+            icon={handleGrid ? StretchHorizontal : LayoutGrid}
+            onClick={() => setHandleGrid(!handleGrid)}
           />
 
-          {isMoreOpen && (
-            <div className="absolute right-0 top-full mt-1 bg-(--primary-color) border rounded-lg shadow-lg z-50 min-w-[160px] overflow-hidden">
-              <button
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-[#1a3a5c] transition-colors rounded-t-lg"
-                onClick={() => setIsMoreOpen(false)}
-              >
-                <RotateCcw className="w-4 h-4" />
-                Actualizar
-              </button>
-              <button
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-[#1a3a5c] transition-colors"
-                onClick={() => setIsMoreOpen(false)}
-              >
-                <Settings className="w-4 h-4" />
-                Configuración
-              </button>
-              <button
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-[#1a3a5c] transition-colors rounded-b-lg"
-                onClick={() => setIsMoreOpen(false)}
-              >
-                <UserRoundPen className="w-4 h-4" />
-                Cuenta
-              </button>
-            </div>
-          )}
+          {/* More options dropdown */}
+          <div className="relative" ref={moreRef}>
+            <IconButton
+              icon={MoreVertical}
+              onClick={() => setIsMoreOpen(!isMoreOpen)}
+            />
+
+            {isMoreOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-(--primary-color) border rounded-lg shadow-lg z-50 min-w-[180px] overflow-hidden">
+                <button
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-[#1a3a5c] transition-colors rounded-t-lg"
+                  onClick={() => setIsMoreOpen(false)}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Actualizar
+                </button>
+                <button
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-[#1a3a5c] transition-colors"
+                  onClick={() => setIsMoreOpen(false)}
+                >
+                  <Settings className="w-4 h-4" />
+                  Configuración
+                </button>
+                <div className="border-t border-white/10" />
+                <Link
+                  href={ROUTES.LOGIN}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-[#1a3a5c] transition-colors"
+                  onClick={() => setIsMoreOpen(false)}
+                >
+                  <User className="w-4 h-4" />
+                  Iniciar sesión
+                </Link>
+                <Link
+                  href={ROUTES.REGISTER}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-[#1a3a5c] transition-colors rounded-b-lg"
+                  onClick={() => setIsMoreOpen(false)}
+                >
+                  <UserRoundPen className="w-4 h-4" />
+                  Registrarse
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* User - Desktop only */}
       <div className="hidden md:block shrink-0 relative" ref={userMenuRef}>

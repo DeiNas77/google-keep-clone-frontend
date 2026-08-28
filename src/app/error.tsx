@@ -19,7 +19,7 @@ export default function Error({
     <div className="flex flex-1 flex-col items-center justify-center gap-6 min-h-full">
       <Bug className="w-32 h-32 text-(--secondary-color)" />
 
-      <h2 className="text-3xl text-whitee">
+      <h2 className="text-3xl text-white">
         Algo mal ocurrido, reintentalo nuevamente
       </h2>
       <button

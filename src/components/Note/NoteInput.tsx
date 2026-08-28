@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useAppContext } from "../context/AppContext";
+import { useClickOutside } from "@/src/hooks/useClickOutside";
+import { useRef } from "react";
 
 export const NoteInput = () => {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -14,34 +16,28 @@ export const NoteInput = () => {
     setIsExpanded(true);
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        if (title || content) {
-          const newNote = {
-            id: crypto.randomUUID(),
-            title,
-            content,
-            archived: false,
-            trashed: false,
-          };
-          addNote(newNote);
-          setTitle("");
-          setContent("");
-        }
-        setIsExpanded(false);
-      }
-    };
+  const handleSave = () => {
+    if (!title.trim() && !content.trim()) {
+      setTitle("");
+      setContent("");
+      setIsExpanded(false);
+      return;
+    }
 
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+    const newNote = {
+      id: crypto.randomUUID(),
+      title: title.trim(),
+      content: content.trim(),
+      archived: false,
+      trashed: false,
     };
-  }, [addNote, content, title]);
+    addNote(newNote);
+    setTitle("");
+    setContent("");
+    setIsExpanded(false);
+  };
+
+  useClickOutside(containerRef, handleSave);
 
   return (
     <section className="w-full max-w-xl mx-auto mt-5 border border-(--secondary-color) rounded-lg">
@@ -60,7 +56,7 @@ export const NoteInput = () => {
         )}
 
         <textarea
-          placeholder="Create a note..."
+          placeholder="Crear una nota..."
           className={`w-full outline-none resize-none focus:ring-0 ${!isExpanded ? "h-5" : "h-10"}`}
           onFocus={handleOpen}
           value={content}

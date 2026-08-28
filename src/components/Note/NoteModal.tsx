@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAppContext } from "@/src/components/context/AppContext";
+import { useClickOutside } from "@/src/hooks/useClickOutside";
 import {
   ArchiveIcon,
   EllipsisVertical,
@@ -26,25 +27,21 @@ export const NoteModal = () => {
 
   const note = selectedNote;
 
+  useClickOutside(dropdownRef, () => setIsDropdownOpen(false));
+
+  const hasFocused = useRef(false);
+
   useEffect(() => {
-    if (contentRef.current) {
+    if (contentRef.current && note && !hasFocused.current) {
       contentRef.current.focus();
+      const length = contentRef.current.value.length;
+      contentRef.current.setSelectionRange(length, length);
+      hasFocused.current = true;
     }
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    if (!note) {
+      hasFocused.current = false;
+    }
+  }, [note]);
 
   if (!note) return null;
 
@@ -142,7 +139,7 @@ export const NoteModal = () => {
                   <EllipsisVertical className="h-5 w-5" />
                 </button>
                 {isDropdownOpen && (
-                  <div className="absolute -right-15 -bottom-12 mb-1 bg-(--primary-color) border rounded-lg shadow-lg z-50 min-w-[160px] overflow-hidden">
+                  <div className="absolute right-0 top-full mt-1 bg-(--primary-color) border rounded-lg shadow-lg z-50 min-w-[160px] overflow-hidden">
                     <button
                       className="flex items-center w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-[#1a3a5c] transition-colors rounded-lg"
                       onClick={handleTrash}

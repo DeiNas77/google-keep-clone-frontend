@@ -1,10 +1,12 @@
 "use client";
 
 import { SplashLayout } from "@/src/components/Layout/SplashLayout";
-import { Trash, TrashIcon } from "lucide-react";
-import { useAppContext } from "../../components/context/AppContext";
-import { NoteCard } from "../../components/Note/NoteCard";
-import { NoteModal } from "../../components/Note/NoteModal";
+import { Trash } from "lucide-react";
+import { useAppContext } from "@/src/components/context/AppContext";
+import { NoteCard } from "@/src/components/Note/NoteCard";
+import { NoteModal } from "@/src/components/Note/NoteModal";
+import { NoteGrid } from "@/src/components/common/NoteGrid";
+import { TrashIcon } from "lucide-react";
 
 export default function TrashPage() {
   const { isGrid, notes, emptyTrash, selectedNote } = useAppContext();
@@ -29,17 +31,11 @@ export default function TrashPage() {
       </section>
 
       {trashedNotes.length > 0 ? (
-        <section
-          className={
-            isGrid
-              ? "grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4 items-start mx-5"
-              : "flex flex-col w-full max-w-xl mx-auto gap-5"
-          }
-        >
+        <NoteGrid isGrid={isGrid}>
           {trashedNotes.map((note) => (
             <NoteCard note={note} key={note.id} />
           ))}
-        </section>
+        </NoteGrid>
       ) : (
         <div className="flex flex-1 items-center justify-center">
           <SplashLayout icon={Trash} text="No hay notas en la papelera" />
