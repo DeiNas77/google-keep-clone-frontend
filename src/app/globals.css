@@ -6,6 +6,10 @@
   --third-color: #f5f0eb;
   --input-color: #0e2a51;
   --card-color: #21306c;
+  --importance-normal: var(--secondary-color);
+  --importance-low: #4ade80;
+  --importance-medium: #facc15;
+  --importance-hard: #ef4444;
 }
 
 @theme inline {
