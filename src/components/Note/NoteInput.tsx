@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAppContext } from "../context/AppContext";
 import { useClickOutside } from "@/src/hooks/useClickOutside";
 import { useRef } from "react";
+import type { Note } from "../types/Note";
 
 export const NoteInput = () => {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
@@ -24,12 +25,13 @@ export const NoteInput = () => {
       return;
     }
 
-    const newNote = {
+    const newNote: Note = {
       id: crypto.randomUUID(),
       title: title.trim(),
       content: content.trim(),
       archived: false,
       trashed: false,
+      importance: "normal",
     };
     addNote(newNote);
     setTitle("");
