@@ -1,21 +1,30 @@
 "use client";
-import { Sidebar } from "./Sidebar";
+import { AppProvider } from "../context/AppContext";
+import { SidebarDesktop, SidebarMobile } from "./Sidebar";
 import { Navbar } from "./Navbar";
-import { useState } from "react";
+import { useAppContext } from "../context/AppContext";
 
-export const ClientLayout = ({ children }: { children: React.ReactNode }) => {
-	const [isOpen, setIsOpen] = useState<boolean>(false);
+const ClientLayoutInner = ({ children }: { children: React.ReactNode }) => {
+  const { isGrid, toggleGrid, isSidebarOpen, toggleSidebar } = useAppContext();
 
-	const handleOpen = () => setIsOpen((prev) => !prev);
-
-	return (
-		<div className="flex flex-col h-dvh">
-			<Navbar handleOpen={handleOpen} />
-
-			<div className="flex flex-1 overflow-hidden">
-				<Sidebar isOpen={isOpen} />
-				<main className="flex-1 overflow-auto p-4"> {children}</main>
-			</div>
-		</div>
-	);
+  return (
+    <section className="flex flex-col h-dvh">
+      <Navbar
+        handleOpen={toggleSidebar}
+        handleGrid={isGrid}
+        setHandleGrid={toggleGrid}
+      />
+      <div className="flex flex-1 overflow-hidden">
+        <SidebarDesktop isOpen={isSidebarOpen} />
+        <SidebarMobile isOpen={isSidebarOpen} onClose={toggleSidebar} />
+        <main className="flex-1 overflow-auto p-4">{children}</main>
+      </div>
+    </section>
+  );
 };
+
+export const ClientLayout = ({ children }: { children: React.ReactNode }) => (
+  <AppProvider>
+    <ClientLayoutInner>{children}</ClientLayoutInner>
+  </AppProvider>
+);
