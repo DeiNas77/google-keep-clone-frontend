@@ -11,13 +11,16 @@ export default function LoginPage() {
         <form className="flex flex-col gap-4">
           <div>
             <label className="block text-sm text-white/70 mb-1">
-              Correo electrónico
+              Email o usuario
             </label>
             <input
-              type="email"
+              type="text"
               className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/40 outline-none focus:border-white/50 transition-colors"
-              placeholder="tu@email.com"
+              placeholder="john@email.com o John Doe"
             />
+            <p className="text-xs text-white/40 mt-1">
+              Puedes iniciar sesión con tu correo o tu usuario
+            </p>
           </div>
           <div>
             <label className="block text-sm text-white/70 mb-1">
