@@ -1,5 +1,6 @@
 "use client";
 import { AppProvider } from "../context/AppContext";
+import { AuthProvider } from "../context/AuthContext";
 import { SidebarDesktop, SidebarMobile } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import { useAppContext } from "../context/AppContext";
@@ -24,7 +25,9 @@ const ClientLayoutInner = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const ClientLayout = ({ children }: { children: React.ReactNode }) => (
-  <AppProvider>
-    <ClientLayoutInner>{children}</ClientLayoutInner>
-  </AppProvider>
+  <AuthProvider>
+    <AppProvider>
+      <ClientLayoutInner>{children}</ClientLayoutInner>
+    </AppProvider>
+  </AuthProvider>
 );
