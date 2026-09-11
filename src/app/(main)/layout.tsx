@@ -1,11 +1,10 @@
 "use client";
-import { AppProvider } from "../context/AppContext";
-import { AuthProvider } from "../context/AuthContext";
-import { SidebarDesktop, SidebarMobile } from "./Sidebar";
-import { Navbar } from "./Navbar";
-import { useAppContext } from "../context/AppContext";
+import { AppProvider } from "../../components/context/AppContext";
+import { SidebarDesktop, SidebarMobile } from "../../components/Layout/Sidebar";
+import { Navbar } from "../../components/Layout/Navbar";
+import { useAppContext } from "../../components/context/AppContext";
 
-const ClientLayoutInner = ({ children }: { children: React.ReactNode }) => {
+const MainLayoutInner = ({ children }: { children: React.ReactNode }) => {
   const { isGrid, toggleGrid, isSidebarOpen, toggleSidebar } = useAppContext();
 
   return (
@@ -24,10 +23,10 @@ const ClientLayoutInner = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export const ClientLayout = ({ children }: { children: React.ReactNode }) => (
-  <AuthProvider>
+export default function MainLayout({ children }: { children: React.ReactNode }) {
+  return (
     <AppProvider>
-      <ClientLayoutInner>{children}</ClientLayoutInner>
+      <MainLayoutInner>{children}</MainLayoutInner>
     </AppProvider>
-  </AuthProvider>
-);
+  );
+}
