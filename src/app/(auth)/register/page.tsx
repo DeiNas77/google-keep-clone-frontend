@@ -1,16 +1,67 @@
+"use client";
+
 import Link from "next/link";
 import { Camera, User } from "lucide-react";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ROUTES } from "@/src/constant";
+import { useAuth } from "@/src/components/context/AuthContext";
+import googleKeepApi from "@/src/http/googleKeepApi";
 
 export default function RegisterPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    if (form.password !== form.confirmPassword) {
+      setError("Las contraseñas no coinciden");
+      setIsLoading(false);
+      return;
+    }
+
+    const registered = await googleKeepApi.Register(
+      form.username,
+      form.email,
+      form.password,
+    );
+    if (!registered.data) {
+      setError(registered.message);
+      setIsLoading(false);
+      return;
+    }
+
+    const logged = await googleKeepApi.Login(form.username, form.password);
+    if (!logged.data) {
+      setError(registered.message);
+      setIsLoading(false);
+      return;
+    }
+
+    login(logged.data.user, logged.data.token);
+    router.push(ROUTES.HOME);
+  };
+
   return (
     <section className="flex flex-1 items-center justify-center min-h-full">
       <div className="bg-(--card-color) rounded-3xl p-8 w-full max-w-md mx-4 shadow-xl">
         <h1 className="text-2xl font-semibold text-white text-center mb-6">
           Crear cuenta
         </h1>
-        <form className="flex flex-col gap-4">
-          {/* Avatar upload */}
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          {/* Avatar placeholder (upload es post-MVP) */}
           <div className="flex justify-center mb-2">
             <button
               type="button"
@@ -30,6 +81,8 @@ export default function RegisterPage() {
               type="text"
               className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/40 outline-none focus:border-white/50 transition-colors"
               placeholder="John Doe"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
             />
           </div>
           <div>
@@ -40,6 +93,8 @@ export default function RegisterPage() {
               type="email"
               className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/40 outline-none focus:border-white/50 transition-colors"
               placeholder="John@email.com"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </div>
           <div>
@@ -50,6 +105,8 @@ export default function RegisterPage() {
               type="password"
               className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/40 outline-none focus:border-white/50 transition-colors"
               placeholder="Passw0rd!"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
           </div>
           <div>
@@ -60,13 +117,19 @@ export default function RegisterPage() {
               type="password"
               className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/40 outline-none focus:border-white/50 transition-colors"
               placeholder="••••••••"
+              value={form.confirmPassword}
+              onChange={(e) =>
+                setForm({ ...form, confirmPassword: e.target.value })
+              }
             />
           </div>
+          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
           <button
             type="submit"
-            className="w-full py-3 mt-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg cursor-pointer transition-colors"
+            className="w-full py-3 mt-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
           >
-            Crear cuenta
+            {isLoading ? "Creando cuenta..." : "Crear cuenta"}
           </button>
         </form>
         <p className="text-center text-white/60 text-sm mt-6">

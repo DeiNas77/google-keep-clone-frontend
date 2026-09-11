@@ -2,6 +2,7 @@ import {
   ApiResponse,
   LoginResponse,
   RegisterResponse,
+  User,
 } from "../components/types/Auth";
 import type { AxiosError } from "axios";
 import httpClient from "./httpClient";
@@ -82,6 +83,81 @@ class googleKeepApi {
       return handleError(error, result);
     }
   }
+
+  async GetMe(): Promise<ApiResponse<User>> {
+    const result: ApiResponse<User> = {
+      data: null,
+      message: "",
+    };
+
+    try {
+      const response = await httpClient.get({
+        url: "/auth/me",
+      });
+
+      result.data = response.data;
+      return result;
+    } catch (error) {
+      return handleError(error, result);
+    }
+  }
+
+  async UpdateUsernameProfile(username: string): Promise<ApiResponse<User>> {
+    const result: ApiResponse<User> = {
+      data: null,
+      message: "",
+    };
+
+    try {
+      const response = await httpClient.patch({
+        url: "/auth/update-username-profile",
+        body: { username },
+      });
+
+      const {
+        id,
+        username: userUsername,
+        email: userEmail,
+        avatarUrl: userAvatarUrl,
+        message,
+      } = response.data;
+
+      result.data = {
+        id,
+        username: userUsername,
+        email: userEmail,
+        avatarUrl: userAvatarUrl,
+      };
+
+      result.message = message;
+      return result;
+    } catch (error) {
+      return handleError(error, result);
+    }
+  }
+
+  async UpdatePasswordProfile(
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<ApiResponse<{ message: string }>> {
+    const result: ApiResponse<{ message: string }> = {
+      data: null,
+      message: "",
+    };
+
+    try {
+      const response = await httpClient.patch({
+        url: "/auth/update-password-profile",
+        body: { currentPassword, newPassword },
+      });
+
+      const { message } = response.data;
+      result.data = { message };
+      return result;
+    } catch (error) {
+      return handleError(error, result);
+    }
+  }
 }
 
-export default googleKeepApi;
+export default new googleKeepApi();

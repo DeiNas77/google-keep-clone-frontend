@@ -7,9 +7,10 @@ interface AuthContextProps {
   user: User | null;
   isLoggedIn: boolean;
   isLoading: boolean;
-  login: (user: User) => void;
+  login: (user: User, token: string) => void;
   logout: () => void;
-  register: (user: User) => void;
+  register: (user: User, token: string) => void;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextProps>({} as AuthContextProps);
@@ -29,7 +30,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(getInitialUser);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const login = (user: User) => {
+  const login = (user: User, token: string) => {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN, token);
     localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(user));
     setUser(user);
   };
@@ -40,7 +42,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
   };
 
-  const register = (user: User) => login(user);
+  const register = (user: User, token: string) => login(user, token);
+
+  const updateUser = (userData: User) => {
+    localStorage.setItem(LOCAL_STORAGE_KEYS.USER, JSON.stringify(userData));
+    setUser(userData);
+  };
 
   return (
     <AuthContext.Provider
@@ -51,6 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         login,
         logout,
         register,
+        updateUser,
       }}
     >
       {children}
@@ -59,4 +67,3 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-

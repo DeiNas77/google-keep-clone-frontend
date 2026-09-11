@@ -4,6 +4,7 @@ export const ROUTES = {
   TRASH: "/trash",
   LOGIN: "/login",
   REGISTER: "/register",
+  PROFILE: "/profile",
 } as const;
 
 export const SIDEBAR_LINKS = [

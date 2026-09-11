@@ -19,7 +19,7 @@ interface PostParams {
 interface PutParams {
   url: string;
   body?: object;
-  headers: object;
+  headers?: object;
   options?: AxiosRequestConfig;
 }
 
