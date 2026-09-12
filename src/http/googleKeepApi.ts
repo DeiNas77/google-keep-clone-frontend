@@ -1,11 +1,13 @@
 import {
-  ApiResponse,
   LoginResponse,
   RegisterResponse,
   User,
 } from "../components/types/Auth";
 import type { AxiosError } from "axios";
 import httpClient from "./httpClient";
+import { Note } from "../components/types/Note";
+import { ApiResponse } from "../components/types/ApiResponse";
+import { noteColorsImportant } from "../components/types/colors";
 
 const handleError = <T>(error: unknown, result: ApiResponse<T>) => {
   const AxiosError = error as AxiosError<{ message?: string }>;
@@ -151,6 +153,87 @@ class googleKeepApi {
         body: { currentPassword, newPassword },
       });
 
+      const { message } = response.data;
+      result.data = { message };
+      return result;
+    } catch (error) {
+      return handleError(error, result);
+    }
+  }
+
+  //Notes Api
+
+  async GetNotes(): Promise<ApiResponse<Note[]>> {
+    const result: ApiResponse<Note[]> = {
+      data: null,
+      message: "",
+    };
+
+    try {
+      const response = await httpClient.get({ url: "/notes" });
+
+      result.data = response.data;
+      return result;
+    } catch (error) {
+      return handleError(error, result);
+    }
+  }
+
+  async CreateNotes(
+    title: string,
+    content: string,
+    archived: boolean,
+    trashed: boolean,
+    importance: noteColorsImportant,
+  ): Promise<ApiResponse<Note>> {
+    const result: ApiResponse<Note> = {
+      data: null,
+      message: "",
+    };
+    try {
+      const response = await httpClient.post({
+        url: "/notes",
+        body: { title, content, archived, trashed, importance },
+      });
+
+      result.data = response.data;
+
+      return result;
+    } catch (error) {
+      return handleError(error, result);
+    }
+  }
+
+  async UpdateNotes(
+    id: string,
+    updates: Partial<Note>,
+  ): Promise<ApiResponse<Note>> {
+    const result: ApiResponse<Note> = {
+      data: null,
+      message: "",
+    };
+    try {
+      const response = await httpClient.patch({
+        url: `/notes/${id}`,
+        body: {
+          ...updates,
+        },
+      });
+
+      result.data = response.data;
+      return result;
+    } catch (error) {
+      return handleError(error, result);
+    }
+  }
+
+  async DeleteNotes(id: string): Promise<ApiResponse<{ message: string }>> {
+    const result: ApiResponse<{ message: string }> = {
+      data: null,
+      message: "",
+    };
+    try {
+      const response = await httpClient.delete({ url: `/notes/${id}` });
       const { message } = response.data;
       result.data = { message };
       return result;
