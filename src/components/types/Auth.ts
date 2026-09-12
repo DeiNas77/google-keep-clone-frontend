@@ -11,9 +11,3 @@ export interface LoginResponse {
 }
 
 export type RegisterResponse = User;
-
-export interface ApiResponse<T> {
-  data: T | null;
-  message: string;
-}
-
