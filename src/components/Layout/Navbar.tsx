@@ -23,7 +23,7 @@ export const Navbar = ({
   setHandleGrid,
 }: NavbarProps) => {
   const { searchQuery, setSearchQuery } = useAppContext();
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, isLoading } = useAuth();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -117,7 +117,9 @@ export const Navbar = ({
 
       {/* User - Desktop only */}
       <div className="hidden md:block shrink-0 relative" ref={userMenuRef}>
-        {isLoggedIn && user ? (
+        {isLoading ? (
+          <span className="w-8 h-8 rounded-full bg-white/20 border border-white/15 flex items-center justify-center overflow-hidden shrink-0" />
+        ) : isLoggedIn && user ? (
           <button
             type="button"
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}

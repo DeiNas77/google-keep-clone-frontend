@@ -1,9 +1,11 @@
 // context/AppContext.tsx
 "use client";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { Note } from "../types/Note";
 import { useDebounce } from "@/src/hooks/useDebounce";
 import type { noteColorsImportant } from "../types/colors";
+import { LOCAL_STORAGE_KEYS } from "@/src/constant";
+import { getInitialNotes } from "@/src/helper/getInitialNotes";
 
 interface AppContextProps {
   notes: Note[];
@@ -31,11 +33,23 @@ const AppContext = createContext<AppContextProps>({} as AppContextProps);
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [isHydrated, setIsHydrated] = useState<boolean>(false);
   const [isGrid, setIsGrid] = useState<boolean>(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const debouncedQuery = useDebounce(searchQuery, 300);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNotes(getInitialNotes());
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    localStorage.setItem(LOCAL_STORAGE_KEYS.NOTES, JSON.stringify(notes));
+  }, [notes, isHydrated]);
 
   const toggleGrid = () => setIsGrid((prev) => !prev);
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);

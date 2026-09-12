@@ -1,7 +1,8 @@
 "use client";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { LOCAL_STORAGE_KEYS } from "@/src/constant";
 import type { User } from "../types/Auth";
+import { getInitialUser } from "@/src/helper/getInitialUser";
 
 interface AuthContextProps {
   user: User | null;
@@ -15,20 +16,15 @@ interface AuthContextProps {
 
 const AuthContext = createContext<AuthContextProps>({} as AuthContextProps);
 
-const getInitialUser = (): User | null => {
-  if (typeof window === "undefined") return null;
-  const storedUser = localStorage.getItem(LOCAL_STORAGE_KEYS.USER);
-  if (!storedUser) return null;
-  try {
-    return JSON.parse(storedUser) as User;
-  } catch {
-    return null;
-  }
-};
-
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(getInitialUser);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setUser(getInitialUser());
+    setIsLoading(false);
+  }, []);
 
   const login = (user: User, token: string) => {
     localStorage.setItem(LOCAL_STORAGE_KEYS.ACCESS_TOKEN, token);
