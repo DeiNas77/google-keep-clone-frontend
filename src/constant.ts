@@ -19,4 +19,5 @@ export const URI_BASE = process.env.NEXT_PUBLIC_URI_BASE;
 export const LOCAL_STORAGE_KEYS = {
   ACCESS_TOKEN: "gkcf-access-token",
   USER: "gkcf-user",
+  NOTES: "gkcf-notes",
 } as const;
