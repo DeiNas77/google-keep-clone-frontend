@@ -32,6 +32,7 @@ export const NoteInput = () => {
       archived: false,
       trashed: false,
       importance: "normal",
+      stateNote: "pending",
     };
     addNote(newNote);
     setTitle("");
