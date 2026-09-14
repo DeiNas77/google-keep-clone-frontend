@@ -4,6 +4,7 @@ import {
   User,
 } from "../components/types/Auth";
 import type { AxiosError } from "axios";
+import { toast } from "sonner";
 import httpClient from "./httpClient";
 import { Note } from "../components/types/Note";
 import { ApiResponse } from "../components/types/ApiResponse";
@@ -14,6 +15,7 @@ const handleError = <T>(error: unknown, result: ApiResponse<T>) => {
   const message =
     AxiosError.response?.data?.message || "Ocurrio un error inesperado";
   result.message = message;
+  toast.error(message);
   return result;
 };
 
