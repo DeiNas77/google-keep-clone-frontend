@@ -1,11 +1,14 @@
 // context/AppContext.tsx
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { Note } from "../types/Note";
 import { useDebounce } from "@/src/hooks/useDebounce";
 import type { noteColorsImportant } from "../types/colors";
 import { LOCAL_STORAGE_KEYS } from "@/src/constant";
 import { getInitialNotes } from "@/src/helper/getInitialNotes";
+import googleKeepApi from "@/src/http/googleKeepApi";
+import { toast } from "sonner";
+import { useAuth } from "./AuthContext";
 
 interface AppContextProps {
   notes: Note[];
@@ -27,6 +30,7 @@ interface AppContextProps {
   setSearchQuery: (query: string) => void;
   debouncedQuery: string;
   updateImportance: (id: string, importance: noteColorsImportant) => void;
+  syncPendingNotes: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextProps>({} as AppContextProps);
@@ -39,6 +43,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const debouncedQuery = useDebounce(searchQuery, 300);
+  const { isLoggedIn } = useAuth();
+  const hasAutoSynced = useRef(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -54,7 +60,13 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const toggleGrid = () => setIsGrid((prev) => !prev);
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
-  const addNote = (note: Note) => setNotes((prev) => [note, ...prev]);
+  const addNote = (note: Note) => {
+    setNotes((prev) => [
+      { ...note, stateNote: note.stateNote ?? "pending" },
+      ...prev,
+    ]);
+    toast.success("Nota creada");
+  };
 
   const updateNote = (id: string, title: string, content: string) => {
     setNotes((prev) =>
@@ -66,6 +78,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     setNotes((prev) =>
       prev.map((note) => (note.id === id ? { ...note, archived: true } : note)),
     );
+    toast.success("Nota archivada");
   };
 
   const unarchiveNote = (id: string) => {
@@ -74,6 +87,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         note.id === id ? { ...note, archived: false } : note,
       ),
     );
+    toast.success("Nota desarchivada");
   };
 
   const trashNote = (id: string) => {
@@ -82,20 +96,24 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         note.id === id ? { ...note, trashed: true, archived: false } : note,
       ),
     );
+    toast.success("Nota movida a la papelera");
   };
 
   const emptyTrash = () => {
     setNotes((prev) => prev.filter((n) => !n.trashed));
+    toast.success("Papelera vaciada");
   };
 
   const deleteNotePermanently = (id: string) => {
     setNotes((prev) => prev.filter((n) => n.id !== id));
+    toast.success("Nota eliminada");
   };
 
   const restoreNote = (id: string) => {
     setNotes((prev) =>
       prev.map((note) => (note.id === id ? { ...note, trashed: false } : note)),
     );
+    toast.success("Nota restaurada");
   };
 
   const updateImportance = (id: string, importance: noteColorsImportant) => {
@@ -103,6 +121,49 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       prev.map((note) => (note.id === id ? { ...note, importance } : note)),
     );
   };
+
+  const syncPendingNotes = async () => {
+    const pendingNotes = notes.filter((note) => note.stateNote === "pending");
+    if (pendingNotes.length === 0) return;
+
+    let updatedNotes = [...notes];
+    let syncedCount = 0;
+
+    for (const pendingNote of pendingNotes) {
+      const response = await googleKeepApi.CreateNotes(
+        pendingNote.title,
+        pendingNote.content,
+        pendingNote.archived,
+        pendingNote.trashed,
+        pendingNote.importance,
+      );
+
+      if (response.data) {
+        const syncedNote = { ...response.data, stateNote: "synced" as const };
+        updatedNotes = updatedNotes.map((note) =>
+          note.id === pendingNote.id ? syncedNote : note,
+        );
+        setSelectedNote((current) =>
+          current?.id === pendingNote.id ? syncedNote : current,
+        );
+        syncedCount++;
+      }
+    }
+
+    setNotes(updatedNotes);
+
+    if (syncedCount > 0) {
+      toast.success(`Notas sincronizadas (${syncedCount})`);
+    }
+  };
+
+  useEffect(() => {
+    if (!isHydrated || !isLoggedIn) return;
+    if (hasAutoSynced.current) return;
+    hasAutoSynced.current = true;
+    syncPendingNotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHydrated, isLoggedIn]);
 
   return (
     <AppContext.Provider
@@ -126,6 +187,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setSearchQuery,
         debouncedQuery,
         updateImportance,
+        syncPendingNotes,
       }}
     >
       {children}
