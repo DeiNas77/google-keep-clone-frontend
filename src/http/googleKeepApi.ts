@@ -6,7 +6,7 @@ import {
 import type { AxiosError } from "axios";
 import { toast } from "sonner";
 import httpClient from "./httpClient";
-import { Note } from "../components/types/Note";
+import { GetNotesResponse, Note } from "../components/types/Note";
 import { ApiResponse } from "../components/types/ApiResponse";
 import { noteColorsImportant } from "../components/types/colors";
 
@@ -165,8 +165,8 @@ class googleKeepApi {
 
   //Notes Api
 
-  async GetNotes(): Promise<ApiResponse<Note[]>> {
-    const result: ApiResponse<Note[]> = {
+  async GetNotes(): Promise<ApiResponse<GetNotesResponse>> {
+    const result: ApiResponse<GetNotesResponse> = {
       data: null,
       message: "",
     };

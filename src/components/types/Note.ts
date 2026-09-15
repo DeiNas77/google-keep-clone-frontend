@@ -12,6 +12,15 @@ export type Note = {
   stateNote: stateNoteSync;
 };
 
+export interface GetNotesResponse {
+  notes: Note[];
+  total: number;
+  page: number;
+  limit: number;
+  q: string | null;
+  totalPages: number;
+}
+
 export interface NoteCardProps {
   note: Note;
 }
