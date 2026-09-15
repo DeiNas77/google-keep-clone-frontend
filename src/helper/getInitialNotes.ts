@@ -5,10 +5,12 @@ export function getInitialNotes(): Note[] {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.NOTES);
     const notes = raw ? (JSON.parse(raw) as Note[]) : [];
-    return notes.map((notes) => ({
-      ...notes,
-      stateNote: notes.stateNote ?? "pending",
-    }));
+    return notes
+      .map((notes) => ({
+        ...notes,
+        stateNote: notes.stateNote ?? "pending",
+      }))
+      .filter((note) => note.stateNote === "pending");
   } catch {
     return [];
   }

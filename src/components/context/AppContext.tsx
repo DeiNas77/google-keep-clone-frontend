@@ -45,6 +45,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const debouncedQuery = useDebounce(searchQuery, 300);
   const { isLoggedIn } = useAuth();
   const hasAutoSynced = useRef(false);
+  const prevLoggedIn = useRef(isLoggedIn);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -54,8 +55,25 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!isHydrated) return;
+    if (isLoggedIn) return;
     localStorage.setItem(LOCAL_STORAGE_KEYS.NOTES, JSON.stringify(notes));
-  }, [notes, isHydrated]);
+  }, [notes, isHydrated, isLoggedIn]);
+
+  useEffect(() => {
+    if (prevLoggedIn.current && !isLoggedIn) {
+      setNotes(getInitialNotes());
+      setSelectedNote(null);
+    }
+    prevLoggedIn.current = isLoggedIn;
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!isHydrated || !isLoggedIn) return;
+    if (hasAutoSynced.current) return;
+    hasAutoSynced.current = true;
+    loadRemoteNotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHydrated, isLoggedIn]);
 
   const toggleGrid = () => setIsGrid((prev) => !prev);
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
@@ -152,18 +170,31 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
     setNotes(updatedNotes);
 
+    const stillPending = updatedNotes.filter(
+      (note) => note.stateNote === "pending",
+    );
+    localStorage.setItem(
+      LOCAL_STORAGE_KEYS.NOTES,
+      JSON.stringify(stillPending),
+    );
+
     if (syncedCount > 0) {
       toast.success(`Notas sincronizadas (${syncedCount})`);
     }
   };
 
-  useEffect(() => {
-    if (!isHydrated || !isLoggedIn) return;
-    if (hasAutoSynced.current) return;
-    hasAutoSynced.current = true;
-    syncPendingNotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHydrated, isLoggedIn]);
+  const loadRemoteNotes = async () => {
+    await syncPendingNotes();
+    const response = await googleKeepApi.GetNotes();
+    if (response.data) {
+      setNotes(
+        response.data.notes.map((note) => ({
+          ...note,
+          stateNote: "synced" as const,
+        })),
+      );
+    }
+  };
 
   return (
     <AppContext.Provider
