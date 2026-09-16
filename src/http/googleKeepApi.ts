@@ -199,6 +199,7 @@ class googleKeepApi {
       });
 
       result.data = response.data;
+      result.message = response.data?.message ?? "";
 
       return result;
     } catch (error) {
@@ -222,14 +223,16 @@ class googleKeepApi {
         },
       });
 
-      result.data = response.data;
+      const { message, ...noteData } = response.data;
+      result.data = noteData;
+      result.message = message;
       return result;
     } catch (error) {
       return handleError(error, result);
     }
   }
 
-  async DeleteNotes(id: string): Promise<ApiResponse<{ message: string }>> {
+  async DeleteNoteById(id: string): Promise<ApiResponse<{ message: string }>> {
     const result: ApiResponse<{ message: string }> = {
       data: null,
       message: "",
@@ -238,6 +241,23 @@ class googleKeepApi {
       const response = await httpClient.delete({ url: `/notes/${id}` });
       const { message } = response.data;
       result.data = { message };
+      result.message = message;
+      return result;
+    } catch (error) {
+      return handleError(error, result);
+    }
+  }
+
+  async DeleteTrashedNotes(): Promise<ApiResponse<{ message: string }>> {
+    const result: ApiResponse<{ message: string }> = {
+      data: null,
+      message: "",
+    };
+    try {
+      const response = await httpClient.delete({ url: "/notes/trash" });
+      const { message } = response.data;
+      result.data = { message };
+      result.message = message;
       return result;
     } catch (error) {
       return handleError(error, result);

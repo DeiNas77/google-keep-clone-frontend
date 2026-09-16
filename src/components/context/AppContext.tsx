@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { Note } from "../types/Note";
 import { useDebounce } from "@/src/hooks/useDebounce";
-import type { noteColorsImportant } from "../types/colors";
 import { LOCAL_STORAGE_KEYS } from "@/src/constant";
 import { getInitialNotes } from "@/src/helper/getInitialNotes";
 import googleKeepApi from "@/src/http/googleKeepApi";
@@ -13,12 +12,15 @@ import { useAuth } from "./AuthContext";
 interface AppContextProps {
   notes: Note[];
   addNote: (note: Note) => void;
-  updateNote: (id: string, title: string, content: string) => void;
+  updateNote: (
+    id: string,
+    updates: Partial<Omit<Note, "stateNote">>,
+  ) => Promise<string | null>;
   archiveNote: (id: string) => void;
   unarchiveNote: (id: string) => void;
   trashNote: (id: string) => void;
   restoreNote: (id: string) => void;
-  deleteNotePermanently: (id: string) => void;
+  deleteNoteById: (id: string) => void;
   emptyTrash: () => void;
   selectedNote: Note | null;
   setSelectedNote: (note: Note | null) => void;
@@ -29,7 +31,6 @@ interface AppContextProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   debouncedQuery: string;
-  updateImportance: (id: string, importance: noteColorsImportant) => void;
   syncPendingNotes: () => Promise<void>;
 }
 
@@ -78,66 +79,215 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const toggleGrid = () => setIsGrid((prev) => !prev);
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
-  const addNote = (note: Note) => {
-    setNotes((prev) => [
-      { ...note, stateNote: note.stateNote ?? "pending" },
-      ...prev,
-    ]);
-    toast.success("Nota creada");
+  const addNote = async (note: Note) => {
+    if (isLoggedIn) {
+      try {
+        const response = await googleKeepApi.CreateNotes(
+          note.title,
+          note.content,
+          note.archived,
+          note.trashed,
+          note.importance,
+        );
+        if (response.data) {
+          const createNotes = {
+            ...response.data,
+            stateNote: "synced" as const,
+          };
+          setNotes((prev) => [createNotes, ...prev]);
+          toast.success(response.message || "Nota creada");
+        }
+      } catch {
+        /* handleError already toasts the backend error */
+      }
+    } else {
+      setNotes((prev) => [
+        { ...note, stateNote: note.stateNote ?? "pending" },
+        ...prev,
+      ]);
+      toast.success("Nota creada");
+    }
   };
 
-  const updateNote = (id: string, title: string, content: string) => {
-    setNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, title, content } : note)),
-    );
+  const updateNote = async (
+    id: string,
+    updates: Partial<Omit<Note, "stateNote">>,
+  ): Promise<string | null> => {
+    if (isLoggedIn) {
+      try {
+        const response = await googleKeepApi.UpdateNotes(id, updates);
+        if (response.data) {
+          const updatedNote = {
+            ...response.data,
+            stateNote: "synced" as const,
+          };
+          setNotes((prev) =>
+            prev.map((note) => (note.id === id ? updatedNote : note)),
+          );
+          return response.message || "Nota actualizada";
+        }
+        return null;
+      } catch {
+        // handleError already toasts the backend error
+        return null;
+      }
+    } else {
+      setNotes((prev) =>
+        prev.map((note) => (note.id === id ? { ...note, ...updates } : note)),
+      );
+      return "Nota actualizada";
+    }
   };
 
-  const archiveNote = (id: string) => {
-    setNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, archived: true } : note)),
-    );
-    toast.success("Nota archivada");
+  const archiveNote = async (id: string) => {
+    if (isLoggedIn) {
+      try {
+        const response = await googleKeepApi.UpdateNotes(id, {
+          archived: true,
+        });
+        if (response.data) {
+          const noteArchive = {
+            ...response.data,
+            stateNote: "synced" as const,
+          };
+          setNotes((prev) =>
+            prev.map((note) => (note.id === id ? noteArchive : note)),
+          );
+          toast.success(response.message || "Nota archivada");
+        }
+      } catch {
+        /* handleError already toasts the backend error */
+      }
+    } else {
+      setNotes((prev) =>
+        prev.map((note) =>
+          note.id === id ? { ...note, archived: true } : note,
+        ),
+      );
+      toast.success("Nota archivada");
+    }
   };
 
-  const unarchiveNote = (id: string) => {
-    setNotes((prev) =>
-      prev.map((note) =>
-        note.id === id ? { ...note, archived: false } : note,
-      ),
-    );
-    toast.success("Nota desarchivada");
+  const unarchiveNote = async (id: string) => {
+    if (isLoggedIn) {
+      try {
+        const response = await googleKeepApi.UpdateNotes(id, {
+          archived: false,
+        });
+        if (response.data) {
+          const unarchiveNotes = {
+            ...response.data,
+            stateNote: "synced" as const,
+          };
+          setNotes((prev) =>
+            prev.map((note) => (note.id === id ? unarchiveNotes : note)),
+          );
+          toast.success(response.message || "Nota desarchivada");
+        }
+      } catch {
+        /* handleError already toasts the backend error */
+      }
+    } else {
+      setNotes((prev) =>
+        prev.map((note) =>
+          note.id === id ? { ...note, archived: false } : note,
+        ),
+      );
+      toast.success("Nota desarchivada");
+    }
   };
 
-  const trashNote = (id: string) => {
-    setNotes((prev) =>
-      prev.map((note) =>
-        note.id === id ? { ...note, trashed: true, archived: false } : note,
-      ),
-    );
-    toast.success("Nota movida a la papelera");
+  const trashNote = async (id: string) => {
+    if (isLoggedIn) {
+      try {
+        const response = await googleKeepApi.UpdateNotes(id, {
+          trashed: true,
+          archived: false,
+        });
+        if (response.data) {
+          const trashNotes = {
+            ...response.data,
+            stateNote: "synced" as const,
+          };
+          setNotes((prev) =>
+            prev.map((note) => (note.id === id ? trashNotes : note)),
+          );
+          toast.success(response.message || "Nota en la papelera");
+        }
+      } catch {
+        /* handleError already toasts the backend error */
+      }
+    } else {
+      setNotes((prev) =>
+        prev.map((note) =>
+          note.id === id ? { ...note, trashed: true, archived: false } : note,
+        ),
+      );
+      toast.success("Nota movida a la papelera");
+    }
   };
 
-  const emptyTrash = () => {
-    setNotes((prev) => prev.filter((n) => !n.trashed));
-    toast.success("Papelera vaciada");
+  const emptyTrash = async () => {
+    if (isLoggedIn) {
+      try {
+        const response = await googleKeepApi.DeleteTrashedNotes();
+        if (response.data) {
+          setNotes((prev) => prev.filter((n) => !n.trashed));
+          toast.success(response.message || "Papelera vaciada");
+        }
+      } catch {
+        /* handleError already toasts the backend error */
+      }
+    } else {
+      setNotes((prev) => prev.filter((n) => !n.trashed));
+      toast.success("Papelera vaciada");
+    }
   };
 
-  const deleteNotePermanently = (id: string) => {
-    setNotes((prev) => prev.filter((n) => n.id !== id));
-    toast.success("Nota eliminada");
+  const deleteNoteById = async (id: string) => {
+    if (isLoggedIn) {
+      try {
+        const response = await googleKeepApi.DeleteNoteById(id);
+        if (response.data) {
+          setNotes((prev) => prev.filter((n) => n.id !== id));
+          toast.success(response.message || "Nota eliminada");
+        }
+      } catch {
+        /* handleError already toasts the backend error */
+      }
+    } else {
+      setNotes((prev) => prev.filter((n) => n.id !== id));
+      toast.success("Nota eliminada");
+    }
   };
 
-  const restoreNote = (id: string) => {
-    setNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, trashed: false } : note)),
-    );
-    toast.success("Nota restaurada");
-  };
-
-  const updateImportance = (id: string, importance: noteColorsImportant) => {
-    setNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, importance } : note)),
-    );
+  const restoreNote = async (id: string) => {
+    if (isLoggedIn) {
+      try {
+        const response = await googleKeepApi.UpdateNotes(id, {
+          trashed: false,
+        });
+        if (response.data) {
+          const restoredNote = {
+            ...response.data,
+            stateNote: "synced" as const,
+          };
+          setNotes((prev) =>
+            prev.map((note) => (note.id === id ? restoredNote : note)),
+          );
+          toast.success(response.message || "Nota restaurada");
+        }
+      } catch {
+        /* handleError already toasts the backend error */
+      }
+    } else {
+      setNotes((prev) =>
+        prev.map((note) =>
+          note.id === id ? { ...note, trashed: false } : note,
+        ),
+      );
+      toast.success("Nota restaurada");
+    }
   };
 
   const syncPendingNotes = async () => {
@@ -205,7 +355,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         archiveNote,
         unarchiveNote,
         trashNote,
-        deleteNotePermanently,
+        deleteNoteById,
         emptyTrash,
         restoreNote,
         selectedNote,
@@ -217,7 +367,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         searchQuery,
         setSearchQuery,
         debouncedQuery,
-        updateImportance,
         syncPendingNotes,
       }}
     >
