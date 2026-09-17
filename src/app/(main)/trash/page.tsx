@@ -3,6 +3,7 @@
 import { SplashLayout } from "@/src/components/Layout/SplashLayout";
 import { Trash } from "lucide-react";
 import { useAppContext } from "@/src/components/context/AppContext";
+import { useAuth } from "@/src/components/context/AuthContext";
 import { NoteCard } from "@/src/components/Note/NoteCard";
 import { NoteModal } from "@/src/components/Note/NoteModal";
 import { NoteGrid } from "@/src/components/common/NoteGrid";
@@ -11,15 +12,22 @@ import { TrashIcon } from "lucide-react";
 import { useMemo } from "react";
 
 export default function TrashPage() {
-  const { isGrid, notes, emptyTrash, selectedNote, debouncedQuery } =
-    useAppContext();
+  const {
+    isGrid,
+    notes,
+    trashedNotes,
+    emptyTrash,
+    selectedNote,
+    debouncedQuery,
+  } = useAppContext();
+  const { isLoggedIn } = useAuth();
   const isSearching = debouncedQuery.trim() !== "";
 
-  const baseTrashedNotes = notes.filter(
-    (note) => note.trashed && !note.archived,
-  );
+  const baseTrashedNotes = isLoggedIn
+    ? trashedNotes
+    : notes.filter((note) => note.trashed && !note.archived);
 
-  const trashedNotes = useMemo(() => {
+  const filteredTrashedNotes = useMemo(() => {
     const query = debouncedQuery.trim().toLowerCase();
     return baseTrashedNotes.filter((note) => {
       const matchQuery =
@@ -47,9 +55,9 @@ export default function TrashPage() {
         )}
       </section>
 
-      {trashedNotes.length > 0 ? (
+      {filteredTrashedNotes.length > 0 ? (
         <NoteGrid isGrid={isGrid}>
-          {trashedNotes.map((note) => (
+          {filteredTrashedNotes.map((note) => (
             <NoteCard note={note} key={note.id} />
           ))}
         </NoteGrid>

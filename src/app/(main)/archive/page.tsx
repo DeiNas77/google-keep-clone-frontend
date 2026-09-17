@@ -3,6 +3,7 @@
 import { SplashLayout } from "@/src/components/Layout/SplashLayout";
 import { ArchiveIcon } from "lucide-react";
 import { useAppContext } from "@/src/components/context/AppContext";
+import { useAuth } from "@/src/components/context/AuthContext";
 import { NoteCard } from "@/src/components/Note/NoteCard";
 import { NoteModal } from "@/src/components/Note/NoteModal";
 import { NoteGrid } from "@/src/components/common/NoteGrid";
@@ -10,12 +11,14 @@ import { SearchNoResults } from "@/src/components/common/SearchNoResults";
 import { useMemo } from "react";
 
 export default function Archive() {
-  const { isGrid, notes, selectedNote, debouncedQuery } = useAppContext();
+  const { isGrid, notes, archivedNotes, selectedNote, debouncedQuery } =
+    useAppContext();
+  const { isLoggedIn } = useAuth();
   const isSearching = debouncedQuery.trim() !== "";
 
-  const baseArchivedNotes = notes.filter(
-    (note) => note.archived && !note.trashed,
-  );
+  const baseArchivedNotes = isLoggedIn
+    ? archivedNotes
+    : notes.filter((note) => note.archived && !note.trashed);
 
   const notesArchived = useMemo(() => {
     const query = debouncedQuery.trim().toLowerCase();
@@ -53,3 +56,4 @@ export default function Archive() {
     </section>
   );
 }
+

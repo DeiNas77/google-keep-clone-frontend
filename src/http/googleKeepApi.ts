@@ -165,14 +165,34 @@ class googleKeepApi {
 
   //Notes Api
 
-  async GetNotes(): Promise<ApiResponse<GetNotesResponse>> {
+  async GetNotes(params: {
+    q?: string;
+    page?: number;
+    limit?: number;
+    archived?: boolean;
+    trashed?: boolean;
+  } = {}): Promise<ApiResponse<GetNotesResponse>> {
     const result: ApiResponse<GetNotesResponse> = {
       data: null,
       message: "",
     };
 
     try {
-      const response = await httpClient.get({ url: "/notes" });
+      const searchParams = new URLSearchParams();
+      if (params.q !== undefined) searchParams.append("q", params.q);
+      if (params.page !== undefined)
+        searchParams.append("page", String(params.page));
+      if (params.limit !== undefined)
+        searchParams.append("limit", String(params.limit));
+      if (params.archived !== undefined)
+        searchParams.append("archived", String(params.archived));
+      if (params.trashed !== undefined)
+        searchParams.append("trashed", String(params.trashed));
+
+      const query = searchParams.toString();
+      const url = query ? `/notes?${query}` : "/notes";
+
+      const response = await httpClient.get({ url });
 
       result.data = response.data;
       return result;

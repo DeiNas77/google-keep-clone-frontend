@@ -5,12 +5,15 @@ import type { Note } from "../types/Note";
 import { useDebounce } from "@/src/hooks/useDebounce";
 import { LOCAL_STORAGE_KEYS } from "@/src/constant";
 import { getInitialNotes } from "@/src/helper/getInitialNotes";
+import { applyGuestNoteUpdate } from "@/src/helper/applyGuestNoteUpdate";
 import googleKeepApi from "@/src/http/googleKeepApi";
 import { toast } from "sonner";
 import { useAuth } from "./AuthContext";
 
 interface AppContextProps {
   notes: Note[];
+  archivedNotes: Note[];
+  trashedNotes: Note[];
   addNote: (note: Note) => void;
   updateNote: (
     id: string,
@@ -38,6 +41,8 @@ const AppContext = createContext<AppContextProps>({} as AppContextProps);
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [archivedNotes, setArchivedNotes] = useState<Note[]>([]);
+  const [trashedNotes, setTrashedNotes] = useState<Note[]>([]);
   const [isHydrated, setIsHydrated] = useState<boolean>(false);
   const [isGrid, setIsGrid] = useState<boolean>(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
@@ -63,6 +68,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (prevLoggedIn.current && !isLoggedIn) {
       setNotes(getInitialNotes());
+      setArchivedNotes([]);
+      setTrashedNotes([]);
       setSelectedNote(null);
     }
     prevLoggedIn.current = isLoggedIn;
@@ -79,6 +86,33 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const toggleGrid = () => setIsGrid((prev) => !prev);
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
+  const upsertInto = (
+    setter: React.Dispatch<React.SetStateAction<Note[]>>,
+    note: Note,
+  ) => {
+    setter((prev) => {
+      const exists = prev.some((existing) => existing.id === note.id);
+      if (exists) {
+        return prev.map((existing) =>
+          existing.id === note.id ? note : existing,
+        );
+      }
+      return [note, ...prev];
+    });
+  };
+
+  const updateIn = (
+    setter: React.Dispatch<React.SetStateAction<Note[]>>,
+    note: Note,
+  ) => setter((prev) => prev.map((n) => (n.id === note.id ? note : n)));
+
+  const removeFrom = (
+    setter: React.Dispatch<React.SetStateAction<Note[]>>,
+    id: string,
+  ) => {
+    setter((prev) => prev.filter((note) => note.id !== id));
+  };
+
   const addNote = async (note: Note) => {
     if (isLoggedIn) {
       try {
@@ -94,18 +128,21 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
             ...response.data,
             stateNote: "synced" as const,
           };
-          setNotes((prev) => [createNotes, ...prev]);
+          upsertInto(setNotes, createNotes);
           toast.success(response.message || "Nota creada");
         }
       } catch {
         /* handleError already toasts the backend error */
       }
     } else {
-      setNotes((prev) => [
-        { ...note, stateNote: note.stateNote ?? "pending" },
-        ...prev,
-      ]);
-      toast.success("Nota creada");
+      applyGuestNoteUpdate(
+        setNotes,
+        (prev) => [
+          { ...note, stateNote: note.stateNote ?? "pending" },
+          ...prev,
+        ],
+        "Nota creada",
+      );
     }
   };
 
@@ -121,9 +158,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
             ...response.data,
             stateNote: "synced" as const,
           };
-          setNotes((prev) =>
-            prev.map((note) => (note.id === id ? updatedNote : note)),
-          );
+          updateIn(setNotes, updatedNote);
+          updateIn(setArchivedNotes, updatedNote);
+          updateIn(setTrashedNotes, updatedNote);
           return response.message || "Nota actualizada";
         }
         return null;
@@ -132,10 +169,13 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         return null;
       }
     } else {
-      setNotes((prev) =>
-        prev.map((note) => (note.id === id ? { ...note, ...updates } : note)),
+      return applyGuestNoteUpdate(
+        setNotes,
+        (prev) =>
+          prev.map((note) => (note.id === id ? { ...note, ...updates } : note)),
+        "Nota actualizada",
+        { toastOnSuccess: false },
       );
-      return "Nota actualizada";
     }
   };
 
@@ -150,21 +190,22 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
             ...response.data,
             stateNote: "synced" as const,
           };
-          setNotes((prev) =>
-            prev.map((note) => (note.id === id ? noteArchive : note)),
-          );
+          removeFrom(setNotes, id);
+          upsertInto(setArchivedNotes, noteArchive);
           toast.success(response.message || "Nota archivada");
         }
       } catch {
         /* handleError already toasts the backend error */
       }
     } else {
-      setNotes((prev) =>
-        prev.map((note) =>
-          note.id === id ? { ...note, archived: true } : note,
-        ),
+      applyGuestNoteUpdate(
+        setNotes,
+        (prev) =>
+          prev.map((note) =>
+            note.id === id ? { ...note, archived: true } : note,
+          ),
+        "Nota archivada",
       );
-      toast.success("Nota archivada");
     }
   };
 
@@ -179,21 +220,22 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
             ...response.data,
             stateNote: "synced" as const,
           };
-          setNotes((prev) =>
-            prev.map((note) => (note.id === id ? unarchiveNotes : note)),
-          );
+          removeFrom(setArchivedNotes, id);
+          upsertInto(setNotes, unarchiveNotes);
           toast.success(response.message || "Nota desarchivada");
         }
       } catch {
         /* handleError already toasts the backend error */
       }
     } else {
-      setNotes((prev) =>
-        prev.map((note) =>
-          note.id === id ? { ...note, archived: false } : note,
-        ),
+      applyGuestNoteUpdate(
+        setNotes,
+        (prev) =>
+          prev.map((note) =>
+            note.id === id ? { ...note, archived: false } : note,
+          ),
+        "Nota desarchivada",
       );
-      toast.success("Nota desarchivada");
     }
   };
 
@@ -209,21 +251,23 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
             ...response.data,
             stateNote: "synced" as const,
           };
-          setNotes((prev) =>
-            prev.map((note) => (note.id === id ? trashNotes : note)),
-          );
+          removeFrom(setNotes, id);
+          removeFrom(setArchivedNotes, id);
+          upsertInto(setTrashedNotes, trashNotes);
           toast.success(response.message || "Nota en la papelera");
         }
       } catch {
         /* handleError already toasts the backend error */
       }
     } else {
-      setNotes((prev) =>
-        prev.map((note) =>
-          note.id === id ? { ...note, trashed: true, archived: false } : note,
-        ),
+      applyGuestNoteUpdate(
+        setNotes,
+        (prev) =>
+          prev.map((note) =>
+            note.id === id ? { ...note, trashed: true, archived: false } : note,
+          ),
+        "Nota movida a la papelera",
       );
-      toast.success("Nota movida a la papelera");
     }
   };
 
@@ -233,14 +277,18 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         const response = await googleKeepApi.DeleteTrashedNotes();
         if (response.data) {
           setNotes((prev) => prev.filter((n) => !n.trashed));
+          setTrashedNotes([]);
           toast.success(response.message || "Papelera vaciada");
         }
       } catch {
         /* handleError already toasts the backend error */
       }
     } else {
-      setNotes((prev) => prev.filter((n) => !n.trashed));
-      toast.success("Papelera vaciada");
+      applyGuestNoteUpdate(
+        setNotes,
+        (prev) => prev.filter((n) => !n.trashed),
+        "Papelera vaciada",
+      );
     }
   };
 
@@ -249,15 +297,20 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const response = await googleKeepApi.DeleteNoteById(id);
         if (response.data) {
-          setNotes((prev) => prev.filter((n) => n.id !== id));
+          removeFrom(setTrashedNotes, id);
+          removeFrom(setNotes, id);
+          removeFrom(setArchivedNotes, id);
           toast.success(response.message || "Nota eliminada");
         }
       } catch {
         /* handleError already toasts the backend error */
       }
     } else {
-      setNotes((prev) => prev.filter((n) => n.id !== id));
-      toast.success("Nota eliminada");
+      applyGuestNoteUpdate(
+        setNotes,
+        (prev) => prev.filter((n) => n.id !== id),
+        "Nota eliminada",
+      );
     }
   };
 
@@ -272,21 +325,22 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
             ...response.data,
             stateNote: "synced" as const,
           };
-          setNotes((prev) =>
-            prev.map((note) => (note.id === id ? restoredNote : note)),
-          );
+          removeFrom(setTrashedNotes, id);
+          upsertInto(setNotes, restoredNote);
           toast.success(response.message || "Nota restaurada");
         }
       } catch {
         /* handleError already toasts the backend error */
       }
     } else {
-      setNotes((prev) =>
-        prev.map((note) =>
-          note.id === id ? { ...note, trashed: false } : note,
-        ),
+      applyGuestNoteUpdate(
+        setNotes,
+        (prev) =>
+          prev.map((note) =>
+            note.id === id ? { ...note, trashed: false } : note,
+          ),
+        "Nota restaurada",
       );
-      toast.success("Nota restaurada");
     }
   };
 
@@ -335,10 +389,30 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   const loadRemoteNotes = async () => {
     await syncPendingNotes();
-    const response = await googleKeepApi.GetNotes();
-    if (response.data) {
+    const [homeResponse, archivedResponse, trashResponse] = await Promise.all([
+      googleKeepApi.GetNotes({ archived: false, trashed: false }),
+      googleKeepApi.GetNotes({ archived: true, trashed: false }),
+      googleKeepApi.GetNotes({ trashed: true, archived: false }),
+    ]);
+    if (homeResponse.data) {
       setNotes(
-        response.data.notes.map((note) => ({
+        homeResponse.data.notes.map((note) => ({
+          ...note,
+          stateNote: "synced" as const,
+        })),
+      );
+    }
+    if (archivedResponse.data) {
+      setArchivedNotes(
+        archivedResponse.data.notes.map((note) => ({
+          ...note,
+          stateNote: "synced" as const,
+        })),
+      );
+    }
+    if (trashResponse.data) {
+      setTrashedNotes(
+        trashResponse.data.notes.map((note) => ({
           ...note,
           stateNote: "synced" as const,
         })),
@@ -350,6 +424,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     <AppContext.Provider
       value={{
         notes,
+        archivedNotes,
+        trashedNotes,
         addNote,
         updateNote,
         archiveNote,
