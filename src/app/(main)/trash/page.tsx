@@ -10,8 +10,10 @@ import { NoteGrid } from "@/src/components/common/NoteGrid";
 import { SearchNoResults } from "@/src/components/common/SearchNoResults";
 import { TrashIcon } from "lucide-react";
 import { useMemo } from "react";
+import { Pagination } from "@/src/components/common/Pagination";
 
 export default function TrashPage() {
+  const { page, totalPagesByView, setPage } = useAppContext();
   const {
     isGrid,
     notes,
@@ -22,6 +24,8 @@ export default function TrashPage() {
   } = useAppContext();
   const { isLoggedIn } = useAuth();
   const isSearching = debouncedQuery.trim() !== "";
+
+  const { trash: trashedNoteTotal } = totalPagesByView;
 
   const baseTrashedNotes = isLoggedIn
     ? trashedNotes
@@ -69,6 +73,14 @@ export default function TrashPage() {
         <div className="flex flex-1 items-center justify-center">
           <SplashLayout icon={Trash} text="No hay notas en la papelera" />
         </div>
+      )}
+
+      {isLoggedIn && trashedNoteTotal > 1 && (
+        <Pagination
+          currentPage={page}
+          totalPages={trashedNoteTotal}
+          onPageChange={setPage}
+        />
       )}
 
       {selectedNote && <NoteModal />}

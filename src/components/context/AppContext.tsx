@@ -1,13 +1,22 @@
 // context/AppContext.tsx
 "use client";
+
+// React
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+
+// Types
 import type { Note } from "../types/Note";
+import type { SliceKey } from "../types/pagination";
+
+// Libraries
+import { toast } from "sonner";
+
+// My components & resources
 import { useDebounce } from "@/src/hooks/useDebounce";
 import { LOCAL_STORAGE_KEYS } from "@/src/constant";
 import { getInitialNotes } from "@/src/helper/getInitialNotes";
 import { applyGuestNoteUpdate } from "@/src/helper/applyGuestNoteUpdate";
 import googleKeepApi from "@/src/http/googleKeepApi";
-import { toast } from "sonner";
 import { useAuth } from "./AuthContext";
 
 interface AppContextProps {
@@ -35,11 +44,15 @@ interface AppContextProps {
   setSearchQuery: (query: string) => void;
   debouncedQuery: string;
   syncPendingNotes: () => Promise<void>;
+  page: number;
+  setPage: (page: number) => void;
+  totalPagesByView: Record<SliceKey, number>;
 }
 
 const AppContext = createContext<AppContextProps>({} as AppContextProps);
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
+  // State
   const [notes, setNotes] = useState<Note[]>([]);
   const [archivedNotes, setArchivedNotes] = useState<Note[]>([]);
   const [trashedNotes, setTrashedNotes] = useState<Note[]>([]);
@@ -48,44 +61,67 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [totalPagesByView, setTotalPagesByView] = useState<
+    Record<SliceKey, number>
+  >({
+    home: 1,
+    archive: 1,
+    trash: 1,
+  });
+  const MAX_PER_PAGE = 20;
+
+  // Derived & refs
   const debouncedQuery = useDebounce(searchQuery, 300);
   const { isLoggedIn } = useAuth();
-  const hasAutoSynced = useRef(false);
   const prevLoggedIn = useRef(isLoggedIn);
 
+  // Effects
+  // Hydration
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNotes(getInitialNotes());
     setIsHydrated(true);
   }, []);
 
+  // Remote load: reacts to login, search and page
   useEffect(() => {
-    if (!isHydrated) return;
-    if (isLoggedIn) return;
-    localStorage.setItem(LOCAL_STORAGE_KEYS.NOTES, JSON.stringify(notes));
-  }, [notes, isHydrated, isLoggedIn]);
+    if (!isHydrated || !isLoggedIn) return;
+    loadRemoteNotes(debouncedQuery, page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHydrated, isLoggedIn, debouncedQuery, page]);
 
+  // Reset page when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQuery]);
+
+  // Logout: clear state
   useEffect(() => {
     if (prevLoggedIn.current && !isLoggedIn) {
       setNotes(getInitialNotes());
       setArchivedNotes([]);
       setTrashedNotes([]);
       setSelectedNote(null);
+      setPage(1);
+      setTotalPagesByView({
+        home: 1,
+        archive: 1,
+        trash: 1,
+      });
     }
     prevLoggedIn.current = isLoggedIn;
   }, [isLoggedIn]);
 
+  // Guest persistence: save local notes
   useEffect(() => {
-    if (!isHydrated || !isLoggedIn) return;
-    if (hasAutoSynced.current) return;
-    hasAutoSynced.current = true;
-    loadRemoteNotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHydrated, isLoggedIn]);
+    if (!isHydrated) return;
+    if (isLoggedIn) return;
+    localStorage.setItem(LOCAL_STORAGE_KEYS.NOTES, JSON.stringify(notes));
+  }, [notes, isHydrated, isLoggedIn]);
 
-  const toggleGrid = () => setIsGrid((prev) => !prev);
-  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
-
+  // Helpers
   const upsertInto = (
     setter: React.Dispatch<React.SetStateAction<Note[]>>,
     note: Note,
@@ -113,6 +149,21 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     setter((prev) => prev.filter((note) => note.id !== id));
   };
 
+  const toSyncedNote = (note: Note): Note => ({
+    ...note,
+    stateNote: "synced" as const,
+  });
+
+  const noteSetters: Record<
+    SliceKey,
+    React.Dispatch<React.SetStateAction<Note[]>>
+  > = {
+    home: setNotes,
+    archive: setArchivedNotes,
+    trash: setTrashedNotes,
+  };
+
+  // Notes CRUD
   const addNote = async (note: Note) => {
     if (isLoggedIn) {
       try {
@@ -271,27 +322,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const emptyTrash = async () => {
-    if (isLoggedIn) {
-      try {
-        const response = await googleKeepApi.DeleteTrashedNotes();
-        if (response.data) {
-          setNotes((prev) => prev.filter((n) => !n.trashed));
-          setTrashedNotes([]);
-          toast.success(response.message || "Papelera vaciada");
-        }
-      } catch {
-        /* handleError already toasts the backend error */
-      }
-    } else {
-      applyGuestNoteUpdate(
-        setNotes,
-        (prev) => prev.filter((n) => !n.trashed),
-        "Papelera vaciada",
-      );
-    }
-  };
-
   const deleteNoteById = async (id: string) => {
     if (isLoggedIn) {
       try {
@@ -310,6 +340,27 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setNotes,
         (prev) => prev.filter((n) => n.id !== id),
         "Nota eliminada",
+      );
+    }
+  };
+
+  const emptyTrash = async () => {
+    if (isLoggedIn) {
+      try {
+        const response = await googleKeepApi.DeleteTrashedNotes();
+        if (response.data) {
+          setNotes((prev) => prev.filter((n) => !n.trashed));
+          setTrashedNotes([]);
+          toast.success(response.message || "Papelera vaciada");
+        }
+      } catch {
+        /* handleError already toasts the backend error */
+      }
+    } else {
+      applyGuestNoteUpdate(
+        setNotes,
+        (prev) => prev.filter((n) => !n.trashed),
+        "Papelera vaciada",
       );
     }
   };
@@ -344,33 +395,39 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Remote sync
   const syncPendingNotes = async () => {
     const pendingNotes = notes.filter((note) => note.stateNote === "pending");
-    if (pendingNotes.length === 0) return;
+
+    if (pendingNotes.length === 0) {
+      return;
+    }
 
     let updatedNotes = [...notes];
     let syncedCount = 0;
 
-    for (const pendingNote of pendingNotes) {
-      const response = await googleKeepApi.CreateNotes(
-        pendingNote.title,
-        pendingNote.content,
-        pendingNote.archived,
-        pendingNote.trashed,
-        pendingNote.importance,
-      );
+    await Promise.all(
+      pendingNotes.map(async (pendingNote) => {
+        const response = await googleKeepApi.CreateNotes(
+          pendingNote.title,
+          pendingNote.content,
+          pendingNote.archived,
+          pendingNote.trashed,
+          pendingNote.importance,
+        );
 
-      if (response.data) {
-        const syncedNote = { ...response.data, stateNote: "synced" as const };
-        updatedNotes = updatedNotes.map((note) =>
-          note.id === pendingNote.id ? syncedNote : note,
-        );
-        setSelectedNote((current) =>
-          current?.id === pendingNote.id ? syncedNote : current,
-        );
-        syncedCount++;
-      }
-    }
+        if (response.data) {
+          const syncedNote = { ...response.data, stateNote: "synced" as const };
+          updatedNotes = updatedNotes.map((note) =>
+            note.id === pendingNote.id ? syncedNote : note,
+          );
+          setSelectedNote((current) =>
+            current?.id === pendingNote.id ? syncedNote : current,
+          );
+          syncedCount++;
+        }
+      }),
+    );
 
     setNotes(updatedNotes);
 
@@ -387,38 +444,50 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const loadRemoteNotes = async () => {
+  const loadRemoteNotes = async (q: string = "", page: number = 1) => {
     await syncPendingNotes();
     const [homeResponse, archivedResponse, trashResponse] = await Promise.all([
-      googleKeepApi.GetNotes({ archived: false, trashed: false }),
-      googleKeepApi.GetNotes({ archived: true, trashed: false }),
-      googleKeepApi.GetNotes({ trashed: true, archived: false }),
+      googleKeepApi.GetNotes({
+        q,
+        page,
+        limit: MAX_PER_PAGE,
+        archived: false,
+        trashed: false,
+      }),
+      googleKeepApi.GetNotes({
+        q,
+        page,
+        limit: MAX_PER_PAGE,
+        archived: true,
+        trashed: false,
+      }),
+      googleKeepApi.GetNotes({
+        q,
+        page,
+        limit: MAX_PER_PAGE,
+        trashed: true,
+        archived: false,
+      }),
     ]);
-    if (homeResponse.data) {
-      setNotes(
-        homeResponse.data.notes.map((note) => ({
-          ...note,
-          stateNote: "synced" as const,
-        })),
-      );
-    }
-    if (archivedResponse.data) {
-      setArchivedNotes(
-        archivedResponse.data.notes.map((note) => ({
-          ...note,
-          stateNote: "synced" as const,
-        })),
-      );
-    }
-    if (trashResponse.data) {
-      setTrashedNotes(
-        trashResponse.data.notes.map((note) => ({
-          ...note,
-          stateNote: "synced" as const,
-        })),
-      );
-    }
+
+    const responses = [
+      { key: "home" as const, response: homeResponse },
+      { key: "archive" as const, response: archivedResponse },
+      { key: "trash" as const, response: trashResponse },
+    ];
+
+    responses.forEach(({ key, response }) => {
+      noteSetters[key](response.data?.notes.map(toSyncedNote) ?? []);
+      setTotalPagesByView((prev) => ({
+        ...prev,
+        [key]: Math.max(response.data?.totalPages ?? 1, 1),
+      }));
+    });
   };
+
+  // UI toggles
+  const toggleGrid = () => setIsGrid((prev) => !prev);
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
 
   return (
     <AppContext.Provider
@@ -444,6 +513,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setSearchQuery,
         debouncedQuery,
         syncPendingNotes,
+        page,
+        totalPagesByView,
+        setPage,
       }}
     >
       {children}

@@ -9,12 +9,16 @@ import { NoteModal } from "@/src/components/Note/NoteModal";
 import { NoteGrid } from "@/src/components/common/NoteGrid";
 import { SearchNoResults } from "@/src/components/common/SearchNoResults";
 import { useMemo } from "react";
+import { Pagination } from "@/src/components/common/Pagination";
 
 export default function Archive() {
+  const { page, totalPagesByView, setPage } = useAppContext();
   const { isGrid, notes, archivedNotes, selectedNote, debouncedQuery } =
     useAppContext();
   const { isLoggedIn } = useAuth();
   const isSearching = debouncedQuery.trim() !== "";
+
+  const { archive: archivedNotesTotal } = totalPagesByView;
 
   const baseArchivedNotes = isLoggedIn
     ? archivedNotes
@@ -51,9 +55,14 @@ export default function Archive() {
           />
         </div>
       )}
-
+      {isLoggedIn && archivedNotesTotal > 1 && (
+        <Pagination
+          currentPage={page}
+          totalPages={archivedNotesTotal}
+          onPageChange={setPage}
+        />
+      )}
       {selectedNote && <NoteModal />}
     </section>
   );
 }
-
