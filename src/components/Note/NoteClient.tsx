@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useEffect } from "react";
 import { SplashLayout } from "../Layout/SplashLayout";
 import { NoteInput } from "./NoteInput";
 import { Lightbulb } from "lucide-react";
@@ -8,6 +9,7 @@ import { NoteList } from "../Note/NoteList";
 import { NoteModal } from "./NoteModal";
 import { Pagination } from "../common/Pagination";
 import { useAuth } from "../context/AuthContext";
+import { MAX_PER_PAGE } from "@/src/constant";
 
 export const NoteClient = () => {
   const {
@@ -20,18 +22,40 @@ export const NoteClient = () => {
   } = useAppContext();
 
   const { home: homeTotalPages } = totalPagesByView;
-
   const { isLoggedIn } = useAuth();
-
-  const notesActive = notes.filter((note) => !note.archived && !note.trashed);
   const isSearching = debouncedQuery.trim() !== "";
+
+  const notesActive = useMemo(() => {
+    const query = debouncedQuery.trim().toLowerCase();
+
+    return notes.filter((note) => {
+      const matchesState = !note.archived && !note.trashed;
+      const matchesSearch =
+        !query ||
+        note.title.toLowerCase().includes(query) ||
+        note.content.toLowerCase().includes(query);
+
+      return matchesState && matchesSearch;
+    });
+  }, [notes, debouncedQuery]);
+
+  const totalPages = isLoggedIn
+    ? homeTotalPages
+    : Math.max(1, Math.ceil(notesActive.length / MAX_PER_PAGE));
+
+  // Clamping: avoids ghost page when notes are deleted or search narrows results
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages, setPage]);
 
   return (
     <section className="w-full flex flex-col flex-1 h-full">
       <NoteInput />
 
       {notesActive.length > 0 || isSearching ? (
-        <NoteList />
+        <NoteList notesActive={notesActive} />
       ) : (
         <div className="flex flex-1 items-center justify-center">
           <SplashLayout
@@ -41,13 +65,14 @@ export const NoteClient = () => {
         </div>
       )}
 
-      {isLoggedIn && homeTotalPages > 1 && (
+      {totalPages > 1 && (
         <Pagination
           currentPage={page}
-          totalPages={homeTotalPages}
+          totalPages={totalPages}
           onPageChange={setPage}
         />
       )}
+
       {selectedNote && <NoteModal />}
     </section>
   );

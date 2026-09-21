@@ -19,6 +19,9 @@ import { applyGuestNoteUpdate } from "@/src/helper/applyGuestNoteUpdate";
 import googleKeepApi from "@/src/http/googleKeepApi";
 import { useAuth } from "./AuthContext";
 
+// constants
+import { MAX_PER_PAGE } from "@/src/constant";
+
 interface AppContextProps {
   notes: Note[];
   archivedNotes: Note[];
@@ -71,7 +74,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     archive: 1,
     trash: 1,
   });
-  const MAX_PER_PAGE = 20;
 
   // Derived & refs
   const debouncedQuery = useDebounce(searchQuery, 300);

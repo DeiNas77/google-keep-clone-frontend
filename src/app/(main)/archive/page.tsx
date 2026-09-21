@@ -8,8 +8,10 @@ import { NoteCard } from "@/src/components/Note/NoteCard";
 import { NoteModal } from "@/src/components/Note/NoteModal";
 import { NoteGrid } from "@/src/components/common/NoteGrid";
 import { SearchNoResults } from "@/src/components/common/SearchNoResults";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { Pagination } from "@/src/components/common/Pagination";
+import { MAX_PER_PAGE } from "@/src/constant";
+import { paginate } from "@/src/helper/paginate";
 
 export default function Archive() {
   const { page, totalPagesByView, setPage } = useAppContext();
@@ -35,11 +37,25 @@ export default function Archive() {
     });
   }, [baseArchivedNotes, debouncedQuery]);
 
+  const totalPages = isLoggedIn
+    ? archivedNotesTotal
+    : Math.max(1, Math.ceil(notesArchived.length / MAX_PER_PAGE));
+
+  const noteArchivedToDisplay = isLoggedIn
+    ? notesArchived
+    : paginate(notesArchived, page, MAX_PER_PAGE).paginatedItems;
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages, setPage]);
+
   return (
     <section className="w-full flex flex-col flex-1 h-full">
       {notesArchived.length > 0 ? (
         <NoteGrid isGrid={isGrid}>
-          {notesArchived.map((note) => (
+          {noteArchivedToDisplay.map((note) => (
             <NoteCard note={note} key={note.id} />
           ))}
         </NoteGrid>
@@ -55,10 +71,10 @@ export default function Archive() {
           />
         </div>
       )}
-      {isLoggedIn && archivedNotesTotal > 1 && (
+      {totalPages > 1 && (
         <Pagination
           currentPage={page}
-          totalPages={archivedNotesTotal}
+          totalPages={totalPages}
           onPageChange={setPage}
         />
       )}

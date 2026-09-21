@@ -21,3 +21,5 @@ export const LOCAL_STORAGE_KEYS = {
   USER: "gkcf-user",
   NOTES: "gkcf-notes",
 } as const;
+
+export const MAX_PER_PAGE = 20 as const;

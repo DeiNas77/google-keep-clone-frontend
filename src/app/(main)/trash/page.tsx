@@ -9,8 +9,10 @@ import { NoteModal } from "@/src/components/Note/NoteModal";
 import { NoteGrid } from "@/src/components/common/NoteGrid";
 import { SearchNoResults } from "@/src/components/common/SearchNoResults";
 import { TrashIcon } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { Pagination } from "@/src/components/common/Pagination";
+import { MAX_PER_PAGE } from "@/src/constant";
+import { paginate } from "@/src/helper/paginate";
 
 export default function TrashPage() {
   const { page, totalPagesByView, setPage } = useAppContext();
@@ -42,6 +44,20 @@ export default function TrashPage() {
     });
   }, [debouncedQuery, baseTrashedNotes]);
 
+  const totalPages = isLoggedIn
+    ? trashedNoteTotal
+    : Math.max(1, Math.ceil(filteredTrashedNotes.length / MAX_PER_PAGE));
+
+  const notesTrashedToDisplay = isLoggedIn
+    ? filteredTrashedNotes
+    : paginate(filteredTrashedNotes, page, MAX_PER_PAGE).paginatedItems;
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages, setPage]);
+
   return (
     <section className="w-full flex flex-col flex-1 h-full">
       <section className="flex items-center justify-center gap-4 my-7">
@@ -61,7 +77,7 @@ export default function TrashPage() {
 
       {filteredTrashedNotes.length > 0 ? (
         <NoteGrid isGrid={isGrid}>
-          {filteredTrashedNotes.map((note) => (
+          {notesTrashedToDisplay.map((note) => (
             <NoteCard note={note} key={note.id} />
           ))}
         </NoteGrid>
@@ -75,10 +91,10 @@ export default function TrashPage() {
         </div>
       )}
 
-      {isLoggedIn && trashedNoteTotal > 1 && (
+      {totalPages > 1 && (
         <Pagination
           currentPage={page}
-          totalPages={trashedNoteTotal}
+          totalPages={totalPages}
           onPageChange={setPage}
         />
       )}
