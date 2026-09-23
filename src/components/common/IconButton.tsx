@@ -8,7 +8,7 @@ export const IconButton = ({
 }: IconButtonProps) => {
 	return (
 		<button
-			className={`p-2 rounded-full hover:bg-accent hover:cursor-pointer transition ${classNameButton}`}
+			className={`p-2 rounded-full hover:bg-accent hover:cursor-pointer transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent ${classNameButton}`}
 			{...props}>
 			<Icon className={`w-5 h-5 ${classNameIcon}`} />
 		</button>

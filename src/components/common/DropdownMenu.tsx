@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { LogOut, RotateCcw, Settings, User, UserRoundPen } from "lucide-react";
 import { ROUTES } from "@/src/constant";
 import { useAuth } from "../context/AuthContext";
+import { useAppContext } from "../context/AppContext";
 
 export const DropdownMenu = ({
   variant,
@@ -13,6 +14,7 @@ export const DropdownMenu = ({
   onClose: () => void;
 }) => {
   const { user, isLoggedIn, logout } = useAuth();
+  const { syncPendingNotes, isSyncing } = useAppContext();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -70,10 +72,14 @@ export const DropdownMenu = ({
   return (
     <div className="absolute right-0 top-full mt-1 bg-(--primary-color) border rounded-lg shadow-lg z-50 min-w-[180px] overflow-hidden">
       <button
-        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-[#1a3a5c] transition-colors rounded-t-lg"
-        onClick={() => onClose()}
+        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm cursor-pointer hover:bg-[#1a3a5c] transition-colors rounded-t-lg disabled:opacity-40 disabled:cursor-not-allowed"
+        onClick={async () => {
+          onClose();
+          await syncPendingNotes(true);
+        }}
+        disabled={!isLoggedIn || isSyncing}
       >
-        <RotateCcw className="w-4 h-4" />
+        <RotateCcw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
         Actualizar
       </button>
       <button

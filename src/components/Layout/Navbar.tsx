@@ -22,7 +22,8 @@ export const Navbar = ({
   handleGrid,
   setHandleGrid,
 }: NavbarProps) => {
-  const { searchQuery, setSearchQuery } = useAppContext();
+  const { searchQuery, setSearchQuery, syncPendingNotes, isSyncing } =
+    useAppContext();
   const { user, isLoggedIn, isLoading } = useAuth();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -83,7 +84,17 @@ export const Navbar = ({
 
       {/* Desktop icons - always visible */}
       <div className="hidden md:flex gap-2 shrink-0">
-        <IconButton icon={RotateCcw} />
+        <IconButton
+          icon={RotateCcw}
+          onClick={() => syncPendingNotes(true)}
+          disabled={!isLoggedIn || isSyncing}
+          classNameIcon={isSyncing ? "animate-spin" : ""}
+          title={
+            isLoggedIn
+              ? "Actualizar y sincronizar notas"
+              : "Inicia sesión para sincronizar"
+          }
+        />
         <IconButton
           icon={handleGrid ? StretchHorizontal : LayoutGrid}
           onClick={() => setHandleGrid(!handleGrid)}

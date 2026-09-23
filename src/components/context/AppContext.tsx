@@ -46,7 +46,8 @@ interface AppContextProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   debouncedQuery: string;
-  syncPendingNotes: () => Promise<void>;
+  syncPendingNotes: (manual?: boolean) => Promise<void>;
+  isSyncing: boolean;
   page: number;
   setPage: (page: number) => void;
   totalPagesByView: Record<SliceKey, number>;
@@ -64,6 +65,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -398,56 +400,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Remote sync
-  const syncPendingNotes = async () => {
-    const pendingNotes = notes.filter((note) => note.stateNote === "pending");
-
-    if (pendingNotes.length === 0) {
-      return;
-    }
-
-    let updatedNotes = [...notes];
-    let syncedCount = 0;
-
-    await Promise.all(
-      pendingNotes.map(async (pendingNote) => {
-        const response = await googleKeepApi.CreateNotes(
-          pendingNote.title,
-          pendingNote.content,
-          pendingNote.archived,
-          pendingNote.trashed,
-          pendingNote.importance,
-        );
-
-        if (response.data) {
-          const syncedNote = { ...response.data, stateNote: "synced" as const };
-          updatedNotes = updatedNotes.map((note) =>
-            note.id === pendingNote.id ? syncedNote : note,
-          );
-          setSelectedNote((current) =>
-            current?.id === pendingNote.id ? syncedNote : current,
-          );
-          syncedCount++;
-        }
-      }),
-    );
-
-    setNotes(updatedNotes);
-
-    const stillPending = updatedNotes.filter(
-      (note) => note.stateNote === "pending",
-    );
-    localStorage.setItem(
-      LOCAL_STORAGE_KEYS.NOTES,
-      JSON.stringify(stillPending),
-    );
-
-    if (syncedCount > 0) {
-      toast.success(`Notas sincronizadas (${syncedCount})`);
-    }
-  };
-
-  const loadRemoteNotes = async (q: string = "", page: number = 1) => {
-    await syncPendingNotes();
+  const fetchRemoteNotes = async (q: string = "", page: number = 1) => {
     const [homeResponse, archivedResponse, trashResponse] = await Promise.all([
       googleKeepApi.GetNotes({
         q,
@@ -487,6 +440,77 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
+  const syncPendingNotes = async (manual: boolean = false) => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+
+    try {
+      const storedPending = getInitialNotes();
+      const statePending = notes.filter((note) => note.stateNote === "pending");
+
+      const pendingMap = new Map<string, Note>();
+      storedPending.forEach((note) => pendingMap.set(note.id, note));
+      statePending.forEach((note) => pendingMap.set(note.id, note));
+
+      // Strictly confirm status is pending
+      const pendingNotes = Array.from(pendingMap.values()).filter(
+        (note) => note.stateNote === "pending",
+      );
+
+      let syncedCount = 0;
+      const newlySyncedIds = new Set<string>();
+
+      if (pendingNotes.length > 0) {
+        await Promise.all(
+          pendingNotes.map(async (pendingNote) => {
+            const response = await googleKeepApi.CreateNotes(
+              pendingNote.title,
+              pendingNote.content,
+              pendingNote.archived,
+              pendingNote.trashed,
+              pendingNote.importance,
+            );
+
+            if (response.data) {
+              newlySyncedIds.add(pendingNote.id);
+              syncedCount++;
+            }
+          }),
+        );
+
+        const remainingPending = pendingNotes.filter(
+          (note) => !newlySyncedIds.has(note.id),
+        );
+        localStorage.setItem(
+          LOCAL_STORAGE_KEYS.NOTES,
+          JSON.stringify(remainingPending),
+        );
+
+        if (!manual && syncedCount > 0) {
+          toast.success(`Notas sincronizadas (${syncedCount})`);
+        }
+      }
+
+      if (manual && isLoggedIn) {
+        await fetchRemoteNotes(debouncedQuery, page);
+        if (pendingNotes.length === 0) {
+          toast.info("No hay notas por actualizar");
+        } else if (syncedCount > 0) {
+          toast.success("Notas actualizadas");
+        }
+      }
+    } catch {
+      /* Errors handled by googleKeepApi */
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const loadRemoteNotes = async (q: string = "", page: number = 1) => {
+    await syncPendingNotes(false);
+    await fetchRemoteNotes(q, page);
+  };
+
   // UI toggles
   const toggleGrid = () => setIsGrid((prev) => !prev);
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
@@ -515,6 +539,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setSearchQuery,
         debouncedQuery,
         syncPendingNotes,
+        isSyncing,
         page,
         totalPagesByView,
         setPage,
