@@ -7,6 +7,7 @@ import { Lightbulb } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import { NoteList } from "../Note/NoteList";
 import { NoteModal } from "./NoteModal";
+import { GuestNoticeModal } from "./GuestNoticeModal";
 import { Pagination } from "../common/Pagination";
 import { useAuth } from "../context/AuthContext";
 import { MAX_PER_PAGE } from "@/src/constant";
@@ -74,6 +75,7 @@ export const NoteClient = () => {
       )}
 
       {selectedNote && <NoteModal />}
+      <GuestNoticeModal />
     </section>
   );
 };

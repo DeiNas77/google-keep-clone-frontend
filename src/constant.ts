@@ -20,6 +20,7 @@ export const LOCAL_STORAGE_KEYS = {
   ACCESS_TOKEN: "gkcf-access-token",
   USER: "gkcf-user",
   NOTES: "gkcf-notes",
+  GUEST_NOTICE_LAST_SEEN: "gkcf-guest-notice-last-seen",
 } as const;
 
 export const MAX_PER_PAGE = 20 as const;

@@ -48,6 +48,8 @@ interface AppContextProps {
   debouncedQuery: string;
   syncPendingNotes: (manual?: boolean) => Promise<void>;
   isSyncing: boolean;
+  isGuestNoticeOpen: boolean;
+  closeGuestNotice: () => void;
   page: number;
   setPage: (page: number) => void;
   totalPagesByView: Record<SliceKey, number>;
@@ -66,6 +68,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [isGuestNoticeOpen, setIsGuestNoticeOpen] = useState<boolean>(false);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -81,6 +84,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const debouncedQuery = useDebounce(searchQuery, 300);
   const { isLoggedIn } = useAuth();
   const prevLoggedIn = useRef(isLoggedIn);
+  const GUEST_NOTICE_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour of interval to avise guestNoticeModal
 
   // Effects
   // Hydration
@@ -198,6 +202,20 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         ],
         "Nota creada",
       );
+
+      const rawLastSeen = localStorage.getItem(
+        LOCAL_STORAGE_KEYS.GUEST_NOTICE_LAST_SEEN,
+      );
+      const lastSeen = rawLastSeen ? Number(rawLastSeen) : 0;
+      const now = Date.now();
+
+      if (now - lastSeen > GUEST_NOTICE_COOLDOWN_MS) {
+        setIsGuestNoticeOpen(true);
+        localStorage.setItem(
+          LOCAL_STORAGE_KEYS.GUEST_NOTICE_LAST_SEEN,
+          now.toString(),
+        );
+      }
     }
   };
 
@@ -514,6 +532,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   // UI toggles
   const toggleGrid = () => setIsGrid((prev) => !prev);
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+  const closeGuestNotice = () => setIsGuestNoticeOpen(false);
 
   return (
     <AppContext.Provider
@@ -540,6 +559,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         debouncedQuery,
         syncPendingNotes,
         isSyncing,
+        isGuestNoticeOpen,
+        closeGuestNotice,
         page,
         totalPagesByView,
         setPage,
