@@ -1,34 +1,32 @@
-import { useMemo } from "react";
 import { NoteCard } from "@/src/components/Note/NoteCard";
 import { NoteGrid } from "@/src/components/common/NoteGrid";
 import { SearchNoResults } from "@/src/components/common/SearchNoResults";
 import { useAppContext } from "@/src/components/context/AppContext";
+import { paginate } from "@/src/helper/paginate";
+import { useAuth } from "../context/AuthContext";
+import { MAX_PER_PAGE } from "@/src/constant";
+import type { Note } from "@/src/components/types/Note";
 
-export const NoteList = () => {
-  const { isGrid, notes, debouncedQuery } = useAppContext();
+interface NoteListProps {
+  notesActive: Note[];
+}
+
+export const NoteList = ({ notesActive }: NoteListProps) => {
+  const { isLoggedIn } = useAuth();
+  const { isGrid, debouncedQuery, page } = useAppContext();
   const isSearching = debouncedQuery.trim() !== "";
 
-  const notesPrincipal = useMemo(() => {
-    const query = debouncedQuery.trim().toLowerCase();
+  const notesToDisplay = isLoggedIn
+    ? notesActive
+    : paginate(notesActive, page, MAX_PER_PAGE).paginatedItems;
 
-    return notes.filter((note) => {
-      const matchesState = !note.archived && !note.trashed;
-      const matchesSearch =
-        !query ||
-        note.title.toLowerCase().includes(query) ||
-        note.content.toLowerCase().includes(query);
-
-      return matchesState && matchesSearch;
-    });
-  }, [notes, debouncedQuery]);
-
-  if (notesPrincipal.length === 0 && isSearching) {
+  if (notesActive.length === 0 && isSearching) {
     return <SearchNoResults query={debouncedQuery} />;
   }
 
   return (
     <NoteGrid isGrid={isGrid}>
-      {notesPrincipal.map((note) => (
+      {notesToDisplay.map((note) => (
         <NoteCard note={note} key={note.id} />
       ))}
     </NoteGrid>

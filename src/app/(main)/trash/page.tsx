@@ -3,23 +3,37 @@
 import { SplashLayout } from "@/src/components/Layout/SplashLayout";
 import { Trash } from "lucide-react";
 import { useAppContext } from "@/src/components/context/AppContext";
+import { useAuth } from "@/src/components/context/AuthContext";
 import { NoteCard } from "@/src/components/Note/NoteCard";
 import { NoteModal } from "@/src/components/Note/NoteModal";
 import { NoteGrid } from "@/src/components/common/NoteGrid";
 import { SearchNoResults } from "@/src/components/common/SearchNoResults";
 import { TrashIcon } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
+import { Pagination } from "@/src/components/common/Pagination";
+import { MAX_PER_PAGE } from "@/src/constant";
+import { paginate } from "@/src/helper/paginate";
 
 export default function TrashPage() {
-  const { isGrid, notes, emptyTrash, selectedNote, debouncedQuery } =
-    useAppContext();
+  const { page, totalPagesByView, setPage } = useAppContext();
+  const {
+    isGrid,
+    notes,
+    trashedNotes,
+    emptyTrash,
+    selectedNote,
+    debouncedQuery,
+  } = useAppContext();
+  const { isLoggedIn } = useAuth();
   const isSearching = debouncedQuery.trim() !== "";
 
-  const baseTrashedNotes = notes.filter(
-    (note) => note.trashed && !note.archived,
-  );
+  const { trash: trashedNoteTotal } = totalPagesByView;
 
-  const trashedNotes = useMemo(() => {
+  const baseTrashedNotes = isLoggedIn
+    ? trashedNotes
+    : notes.filter((note) => note.trashed && !note.archived);
+
+  const filteredTrashedNotes = useMemo(() => {
     const query = debouncedQuery.trim().toLowerCase();
     return baseTrashedNotes.filter((note) => {
       const matchQuery =
@@ -29,6 +43,20 @@ export default function TrashPage() {
       return matchQuery;
     });
   }, [debouncedQuery, baseTrashedNotes]);
+
+  const totalPages = isLoggedIn
+    ? trashedNoteTotal
+    : Math.max(1, Math.ceil(filteredTrashedNotes.length / MAX_PER_PAGE));
+
+  const notesTrashedToDisplay = isLoggedIn
+    ? filteredTrashedNotes
+    : paginate(filteredTrashedNotes, page, MAX_PER_PAGE).paginatedItems;
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages, setPage]);
 
   return (
     <section className="w-full flex flex-col flex-1 h-full">
@@ -47,9 +75,9 @@ export default function TrashPage() {
         )}
       </section>
 
-      {trashedNotes.length > 0 ? (
+      {filteredTrashedNotes.length > 0 ? (
         <NoteGrid isGrid={isGrid}>
-          {trashedNotes.map((note) => (
+          {notesTrashedToDisplay.map((note) => (
             <NoteCard note={note} key={note.id} />
           ))}
         </NoteGrid>
@@ -61,6 +89,14 @@ export default function TrashPage() {
         <div className="flex flex-1 items-center justify-center">
           <SplashLayout icon={Trash} text="No hay notas en la papelera" />
         </div>
+      )}
+
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
       )}
 
       {selectedNote && <NoteModal />}

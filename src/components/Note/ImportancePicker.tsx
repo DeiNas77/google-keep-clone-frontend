@@ -21,15 +21,18 @@ export const ImportancePicker = ({
   importance,
   onSelect,
 }: ImportancePickerProps) => {
-  const { updateImportance } = useAppContext();
+  const { updateNote } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(pickerRef, () => setIsOpen(false));
 
   const handleSelect = (level: noteColorsImportant) => {
-    updateImportance(noteId, level);
-    onSelect?.(level);
+    if (onSelect) {
+      onSelect(level);
+    } else {
+      updateNote(noteId, { importance: level });
+    }
     setIsOpen(false);
   };
 

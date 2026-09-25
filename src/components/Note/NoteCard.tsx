@@ -17,7 +17,7 @@ export const NoteCard = ({ note }: NoteCardProps) => {
     unarchiveNote,
     trashNote,
     restoreNote,
-    deleteNotePermanently,
+    deleteNoteById,
     setSelectedNote,
   } = useAppContext();
   const { id, title, content, archived, trashed } = note;
@@ -79,7 +79,7 @@ export const NoteCard = ({ note }: NoteCardProps) => {
             </button>
             <button
               className="p-2 rounded-full hover:bg-white/10 cursor-pointer transition-colors"
-              onClick={() => deleteNotePermanently(id)}
+              onClick={() => deleteNoteById(id)}
               title="Eliminar permanentemente"
             >
               <TrashIcon
