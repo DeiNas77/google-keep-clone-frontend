@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAppContext } from "@/src/components/context/AppContext";
 import { useClickOutside } from "@/src/hooks/useClickOutside";
+import { toast } from "sonner";
 import {
   ArchiveIcon,
   EllipsisVertical,
@@ -21,7 +22,7 @@ export const NoteModal = () => {
     unarchiveNote,
     trashNote,
     restoreNote,
-    deleteNotePermanently,
+    deleteNoteById,
   } = useAppContext();
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -50,7 +51,13 @@ export const NoteModal = () => {
   const colorNoteImportance = colorNote[note.importance];
 
   const handleSaveAndClose = () => {
-    updateNote(note.id, note.title, note.content);
+    updateNote(note.id, {
+      title: note.title,
+      content: note.content,
+      importance: note.importance,
+    }).then((message) => {
+      if (message) toast.success(message);
+    });
     setSelectedNote(null);
   };
 
@@ -77,7 +84,7 @@ export const NoteModal = () => {
   };
 
   const handleDeletePermanently = () => {
-    deleteNotePermanently(note.id);
+    deleteNoteById(note.id);
     setSelectedNote(null);
   };
 

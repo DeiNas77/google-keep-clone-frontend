@@ -14,6 +14,7 @@ import { IconButton } from "../common/IconButton";
 import { NavbarProps } from "../types/NavbarProps";
 import { useClickOutside } from "@/src/hooks/useClickOutside";
 import { useAppContext } from "../context/AppContext";
+import { useAuth } from "../context/AuthContext";
 import { DropdownMenu } from "../common/DropdownMenu";
 
 export const Navbar = ({
@@ -21,7 +22,9 @@ export const Navbar = ({
   handleGrid,
   setHandleGrid,
 }: NavbarProps) => {
-  const { searchQuery, setSearchQuery } = useAppContext();
+  const { searchQuery, setSearchQuery, syncPendingNotes, isSyncing } =
+    useAppContext();
+  const { user, isLoggedIn, isLoading } = useAuth();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -81,7 +84,17 @@ export const Navbar = ({
 
       {/* Desktop icons - always visible */}
       <div className="hidden md:flex gap-2 shrink-0">
-        <IconButton icon={RotateCcw} />
+        <IconButton
+          icon={RotateCcw}
+          onClick={() => syncPendingNotes(true)}
+          disabled={!isLoggedIn || isSyncing}
+          classNameIcon={isSyncing ? "animate-spin" : ""}
+          title={
+            isLoggedIn
+              ? "Actualizar y sincronizar notas"
+              : "Inicia sesión para sincronizar"
+          }
+        />
         <IconButton
           icon={handleGrid ? StretchHorizontal : LayoutGrid}
           onClick={() => setHandleGrid(!handleGrid)}
@@ -115,10 +128,38 @@ export const Navbar = ({
 
       {/* User - Desktop only */}
       <div className="hidden md:block shrink-0 relative" ref={userMenuRef}>
-        <IconButton
-          icon={UserRoundPen}
-          onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-        />
+        {isLoading ? (
+          <span className="w-8 h-8 rounded-full bg-white/20 border border-white/15 flex items-center justify-center overflow-hidden shrink-0" />
+        ) : isLoggedIn && user ? (
+          <button
+            type="button"
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            className={`flex items-center gap-3 pl-1.5 pr-3 py-1.5 rounded-full hover:bg-white/20 transition-colors cursor-pointer ${
+              isUserMenuOpen ? "bg-white/20" : ""
+            }`}
+          >
+            <span className="w-8 h-8 rounded-full bg-white/20 border border-white/15 flex items-center justify-center overflow-hidden shrink-0">
+              {user.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.avatarUrl}
+                  alt={user.username}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <UserRoundPen className="w-4 h-4" />
+              )}
+            </span>
+            <span className="text-sm font-medium max-w-[120px] truncate">
+              {user.username}
+            </span>
+          </button>
+        ) : (
+          <IconButton
+            icon={UserRoundPen}
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+          />
+        )}
         {isUserMenuOpen && (
           <DropdownMenu
             variant="user"
@@ -129,4 +170,3 @@ export const Navbar = ({
     </nav>
   );
 };
-
